@@ -10,16 +10,8 @@
   <body>
     <h1>Jetty Radio</h1>
     <p><a href="https://forms.gle/j2q24MouAZgbefKw5">Sign up form</a></p>
-    <a href="https://stream.jettyradio.com/public/jettyradio/playlist.pls" target="_new">
-      Listen now
-    </a>
-
-    <br><br>
-
-    <audio controls src="https://stream.jettyradio.com/listen/jettyradio/radio.mp3"></audio>
-
-    <br><br>
-
+    <p>Now playing</p>
+    
     <iframe
       id="nowPlaying"
       src="https://stream.jettyradio.com/api/nowplaying_static/jettyradio.txt"
@@ -32,6 +24,16 @@
         iframe.contentWindow.location.reload();
       }, 3000);
     </script>
+    
+    <a href="https://stream.jettyradio.com/public/jettyradio/playlist.pls" target="_new">
+      Listen now!
+    </a>
+
+    <br><br>
+
+    <audio controls src="https://stream.jettyradio.com/listen/jettyradio/radio.mp3"></audio>
+
+    
 
   </body>
 </html>
