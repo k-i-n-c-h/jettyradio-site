@@ -8,7 +8,29 @@
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
-    <a href="https://stream.jettyradio.com/public/jettyradio/playlist.pls" target="_new">Listen now</a>
-    <audio controls="controls" src="https://stream.jettyradio.com/listen/jettyradio/radio.mp3"></audio>
+
+    <a href="https://stream.jettyradio.com/public/jettyradio/playlist.pls" target="_new">
+      Listen now
+    </a>
+
+    <br><br>
+
+    <audio controls src="https://stream.jettyradio.com/listen/jettyradio/radio.mp3"></audio>
+
+    <br><br>
+
+    <iframe
+      id="nowPlaying"
+      src="https://stream.jettyradio.com/api/nowplaying_static/jettyradio.txt"
+      style="width: 100vw; height: 100px; border: none;"
+    ></iframe>
+
+    <script>
+      setInterval(() => {
+        const iframe = document.getElementById('nowPlaying');
+        iframe.contentWindow.location.reload();
+      }, 3000);
+    </script>
+
   </body>
 </html>
