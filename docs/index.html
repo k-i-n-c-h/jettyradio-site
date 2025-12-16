@@ -10,38 +10,65 @@
       body {
         margin: 0;
         padding: 0;
-        font-family: serif;
+        font-family: sans-serif;
         display: flex;
         justify-content: center;
+
+        /* background */
+        background-color: #0e0e0e; /* just above black */
+        background-image: url("bg.png");
+        background-repeat: repeat;
+
+        color: #f2f2f2; /* just under white */
       }
 
       .column {
         width: 100%;
-        max-width: 480px; /* mobile-friendly column */
+        max-width: 480px;
         padding: 16px;
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 14px;
         align-items: center;
         text-align: center;
+      }
+
+      a {
+        color: #f2f2f2;
+        text-decoration: underline;
+      }
+
+      a:hover {
+        opacity: 0.85;
       }
 
       iframe {
         width: 100%;
         height: 100px;
         border: none;
+        background: #0e0e0e;
       }
 
       audio {
         width: 100%;
+      }
+
+      .logo {
+        width: 100%;
+        max-width: 512px;
+        height: auto;
       }
     </style>
   </head>
 
   <body>
     <div class="column">
-      <h1>Jetty Radio</h1>
+      <img
+        src="jettyradio.png"
+        alt="Jetty Radio"
+        class="logo"
+      />
 
       <p>
         <a href="https://forms.gle/j2q24MouAZgbefKw5">Sign up form</a>
@@ -59,8 +86,6 @@
       </a>
 
       <audio controls src="https://stream.jettyradio.com/listen/jettyradio/radio.mp3"></audio>
-
-      <p><a href="https://instagram.com/jettyradio">@jettyradio on instagram</a></p>
     </div>
 
     <script>
