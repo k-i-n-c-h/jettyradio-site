@@ -4,49 +4,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <link rel="icon" type="image/png" href="favicon.png">
     <title>Jetty Radio</title>
+
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
 
     <style>
       body {
         margin: 0;
         padding: 0;
-        font-family: serif;
+        font-family: sans-serif;
         display: flex;
         justify-content: center;
 
-        /* background */
-        background-color: #0e0e0e; /* just above black */
+        background-color: #0e0e0e;
         background-image: url("bg.png");
         background-repeat: repeat;
 
-        color: #f2f2f2; /* just under white */
+        color: #f2f2f2;
+        font-size: 18px; /* bigger text */
       }
 
       .column {
         width: 100%;
         max-width: 480px;
-        padding: 16px;
+        padding: 10px; /* tighter */
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 10px; /* tighter vertical rhythm */
         align-items: center;
         text-align: center;
       }
 
-      a {
-        color: #f2f2f2;
-        text-decoration: underline;
+      .logo {
+        width: 100%;
+        max-width: 512px;
+        height: auto;
+        display: block;
+        margin: 0; /* remove default spacing */
       }
 
-      a:hover {
-        opacity: 0.85;
+      p {
+        margin: 4px 0;
+      }
+
+      a {
+        color: #f2f2f2;
+        font-size: 1.05em;
       }
 
       iframe {
         width: 100%;
-        height: 100px;
+        height: 40px;
         border: none;
         background: #0e0e0e;
       }
@@ -54,19 +64,13 @@
       audio {
         width: 100%;
       }
-
-      .logo {
-        width: 100%;
-        max-width: 400px;
-        height: auto;
-      }
     </style>
   </head>
 
   <body>
     <div class="column">
       <img
-        src="jettyradio2.png"
+        src="jettyradio.png"
         alt="Jetty Radio"
         class="logo"
       />
