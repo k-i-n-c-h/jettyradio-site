@@ -173,37 +173,62 @@
     </div>
 
    <script>
+<script>
   const NOW_PLAYING_URL =
     "https://stream.jettyradio.com/api/nowplaying_static/jettyradio.json";
 
+  const artEl = document.getElementById("art");
   const trackEl = document.getElementById("track");
   const listenersEl = document.getElementById("listeners");
+  const liveBadgeEl = document.getElementById("liveBadge");
+  const djNameEl = document.getElementById("djName");
 
   async function updateNowPlaying() {
     try {
       const res = await fetch(NOW_PLAYING_URL, { cache: "no-store" });
       const data = await res.json();
 
+      /* track info */
       const song = data.now_playing?.song;
-      const listeners = data.listeners?.current;
-
       if (song) {
         trackEl.textContent = `${song.artist} — ${song.title}`;
       } else {
         trackEl.textContent = "Off air";
       }
 
-      if (typeof listeners === "number") {
-        listenersEl.textContent =
-          listeners === 1
-            ? "1 listener"
-            : `${listeners} listeners`;
+      /* album art */
+      if (song?.art) {
+        artEl.src = song.art;
+        artEl.style.display = "block";
       } else {
-        listenersEl.textContent = "";
+        artEl.style.display = "none";
       }
-    } catch (err) {
+
+      /* listeners */
+      const listeners = data.listeners?.current;
+      listenersEl.textContent =
+        typeof listeners === "number"
+          ? listeners === 1
+            ? "1 listener"
+            : `${listeners} listeners`
+          : "";
+
+      /* live status */
+      if (data.live?.is_live) {
+        liveBadgeEl.style.display = "inline";
+        djNameEl.textContent = data.live.streamer_name
+          ? data.live.streamer_name
+          : "Live DJ";
+      } else {
+        liveBadgeEl.style.display = "none";
+        djNameEl.textContent = "";
+      }
+    } catch (e) {
       trackEl.textContent = "Unable to load now playing";
       listenersEl.textContent = "";
+      artEl.style.display = "none";
+      liveBadgeEl.style.display = "none";
+      djNameEl.textContent = "";
     }
   }
 
