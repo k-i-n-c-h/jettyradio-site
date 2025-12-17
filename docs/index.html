@@ -173,7 +173,6 @@
     </div>
 
    <script>
-<script>
   const NOW_PLAYING_URL =
     "https://stream.jettyradio.com/api/nowplaying_static/jettyradio.json";
 
@@ -253,7 +252,7 @@
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
     analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 128;
+    analyser.fftSize = 256;
 
     bufferLength = analyser.frequencyBinCount;
     dataArray = new Uint8Array(bufferLength);
