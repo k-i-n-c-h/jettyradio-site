@@ -53,12 +53,25 @@
         font-size: 1.05em;
       }
 
-      iframe {
+      #nowPlayingWidget {
         width: 100%;
-        height: 40px;
-        border: none;
         background: #0e0e0e;
+        border: 1px solid #333;
+        padding: 6px 8px;
+        box-sizing: border-box;
+        font-size: 0.95em;
+        line-height: 1.2;
       }
+      
+      #track {
+        font-weight: normal;
+      }
+      
+      #listeners {
+        font-size: 0.85em;
+        opacity: 0.8;
+      }
+
 
       /* spectrum + player */
       #spectrum {
@@ -104,10 +117,11 @@
       <button id="playBtn">▶ LIVE</button>
       <p>Now playing:</p>
 
-      <iframe
-        id="nowPlaying"
-        src="https://stream.jettyradio.com/api/nowplaying_static/jettyradio.txt"
-      ></iframe>
+      <div id="nowPlayingWidget">
+        <div id="track">Loading…</div>
+        <div id="listeners"></div>
+      </div>
+
 
       <!-- Hidden audio element -->
       <audio
@@ -128,11 +142,42 @@
     </div>
 
    <script>
-  /* now playing refresh */
-  setInterval(() => {
-    const iframe = document.getElementById("nowPlaying");
-    iframe.contentWindow.location.reload();
-  }, 3000);
+  const NOW_PLAYING_URL =
+    "https://stream.jettyradio.com/api/nowplaying_static/jettyradio.json";
+
+  const trackEl = document.getElementById("track");
+  const listenersEl = document.getElementById("listeners");
+
+  async function updateNowPlaying() {
+    try {
+      const res = await fetch(NOW_PLAYING_URL, { cache: "no-store" });
+      const data = await res.json();
+
+      const song = data.now_playing?.song;
+      const listeners = data.listeners?.current;
+
+      if (song) {
+        trackEl.textContent = `${song.artist} — ${song.title}`;
+      } else {
+        trackEl.textContent = "Off air";
+      }
+
+      if (typeof listeners === "number") {
+        listenersEl.textContent =
+          listeners === 1
+            ? "1 listener"
+            : `${listeners} listeners`;
+      } else {
+        listenersEl.textContent = "";
+      }
+    } catch (err) {
+      trackEl.textContent = "Unable to load now playing";
+      listenersEl.textContent = "";
+    }
+  }
+
+  updateNowPlaying();
+  setInterval(updateNowPlaying, 3000);
 
   const audio = document.getElementById("audio");
   const canvas = document.getElementById("spectrum");
