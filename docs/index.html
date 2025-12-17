@@ -93,20 +93,6 @@
       />
 
       <p>Santa Cruz based internet radio</p>
-
-      <p>
-        <a href="https://forms.gle/j2q24MouAZgbefKw5">
-          Submit a show or Volunteer
-        </a>
-      </p>
-
-      <p>Now playing</p>
-
-      <iframe
-        id="nowPlaying"
-        src="https://stream.jettyradio.com/api/nowplaying_static/jettyradio.txt"
-      ></iframe>
-
       <p>
         <a href="https://stream.jettyradio.com/public/jettyradio/playlist.pls" target="_new">
           Listen Live!
@@ -116,6 +102,12 @@
       <!-- Custom Player -->
       <canvas id="spectrum"></canvas>
       <button id="playBtn">▶ LIVE</button>
+      <p>Now playing:</p>
+
+      <iframe
+        id="nowPlaying"
+        src="https://stream.jettyradio.com/api/nowplaying_static/jettyradio.txt"
+      ></iframe>
 
       <!-- Hidden audio element -->
       <audio
@@ -123,80 +115,94 @@
         src="https://stream.jettyradio.com/listen/jettyradio/radio.mp3"
         crossorigin="anonymous">
       </audio>
+      
+      <p>
+        <a href="https://forms.gle/j2q24MouAZgbefKw5">
+          Submit a show or Volunteer
+        </a>
+      </p>
 
       <p>
         <a href="https://instagram.com/jettyradio">@jettyradio on instagram</a>
       </p>
     </div>
 
-    <script>
-      /* now playing refresh */
-      setInterval(() => {
-        const iframe = document.getElementById("nowPlaying");
-        iframe.contentWindow.location.reload();
-      }, 3000);
+   <script>
+  /* now playing refresh */
+  setInterval(() => {
+    const iframe = document.getElementById("nowPlaying");
+    iframe.contentWindow.location.reload();
+  }, 3000);
 
-      /* audio + spectrum */
-      const audio = document.getElementById("audio");
-      const canvas = document.getElementById("spectrum");
-      const ctx = canvas.getContext("2d");
-      const playBtn = document.getElementById("playBtn");
+  const audio = document.getElementById("audio");
+  const canvas = document.getElementById("spectrum");
+  const ctx = canvas.getContext("2d");
+  const playBtn = document.getElementById("playBtn");
 
-      const HEIGHT = 50;
-      canvas.height = HEIGHT;
+  const HEIGHT = 50;
+  canvas.height = HEIGHT;
 
-      let audioCtx, analyser, dataArray, bufferLength;
-      let started = false;
+  let audioCtx = null;
+  let analyser = null;
+  let dataArray = null;
+  let bufferLength = 0;
+  let started = false;
 
-      function initAudio() {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        analyser = audioCtx.createAnalyser();
+  function setupAudioContext() {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        analyser.fftSize = 128; // controls number of columns
-        bufferLength = analyser.frequencyBinCount;
-        dataArray = new Uint8Array(bufferLength);
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 128;
 
-        const source = audioCtx.createMediaElementSource(audio);
-        source.connect(analyser);
-        analyser.connect(audioCtx.destination);
+    bufferLength = analyser.frequencyBinCount;
+    dataArray = new Uint8Array(bufferLength);
 
-        canvas.width = bufferLength; // 1px per band
-      }
+    const source = audioCtx.createMediaElementSource(audio);
+    source.connect(analyser);
+    analyser.connect(audioCtx.destination);
 
-      function draw() {
-        requestAnimationFrame(draw);
-        analyser.getByteFrequencyData(dataArray);
+    canvas.width = bufferLength;
+  }
 
-        ctx.clearRect(0, 0, canvas.width, HEIGHT);
+  function draw() {
+    if (!analyser) return;
 
-        for (let i = 0; i < bufferLength; i++) {
-          const value = dataArray[i] / 255;
-          const barHeight = Math.floor(value * HEIGHT);
+    requestAnimationFrame(draw);
+    analyser.getByteFrequencyData(dataArray);
 
-          ctx.fillStyle = "#f2f2f2";
-          ctx.fillRect(i, HEIGHT - barHeight, 1, barHeight);
-        }
-      }
+    ctx.clearRect(0, 0, canvas.width, HEIGHT);
 
-      function togglePlay() {
-        if (!started) {
-          initAudio();
-          draw();
-          started = true;
-        }
+    for (let i = 0; i < bufferLength; i++) {
+      const v = dataArray[i] / 255;
+      const h = Math.floor(v * HEIGHT);
+      ctx.fillStyle = "#f2f2f2";
+      ctx.fillRect(i, HEIGHT - h, 1, h);
+    }
+  }
 
-        if (audio.paused) {
-          audioCtx.resume();
-          audio.play();
-          playBtn.textContent = "❚❚ LIVE";
-        } else {
-          audio.pause();
-          playBtn.textContent = "▶ LIVE";
-        }
-      }
+  function togglePlay() {
+    // SAFARI REQUIREMENT: create AudioContext on user gesture
+    if (!started) {
+      audio.load();            // important for Safari streams
+      setupAudioContext();
+      draw();
+      started = true;
+    }
 
-      playBtn.addEventListener("click", togglePlay);
-      canvas.addEventListener("click", togglePlay);
-    </script>
+    if (audio.paused) {
+      audioCtx.resume().then(() => {
+        audio.play();
+        playBtn.textContent = "❚❚ LIVE";
+      });
+    } else {
+      audio.pause();
+      playBtn.textContent = "▶ LIVE";
+    }
+  }
+
+  playBtn.addEventListener("click", togglePlay);
+  canvas.addEventListener("click", togglePlay);
+</script>
+
   </body>
 </html>
