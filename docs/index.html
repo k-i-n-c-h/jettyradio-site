@@ -55,27 +55,50 @@
 
       #nowPlayingWidget {
         width: 100%;
-        background: #0e0e0e;
-        border: 1px solid #333;
-        padding: 6px 8px;
-        box-sizing: border-box;
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
         font-size: 0.95em;
-        line-height: 1.2;
+      }
+      
+      #art {
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+        image-rendering: auto;
+        display: none; /* shown only if art exists */
+      }
+      
+      #npText {
+        flex: 1;
+        text-align: left;
+      }
+      
+      #liveRow {
+        font-size: 0.75em;
+        margin-bottom: 2px;
+      }
+      
+      #liveBadge {
+        display: none;
+        font-weight: bold;
+        margin-right: 6px;
       }
       
       #track {
-        font-weight: normal;
+        font-size: 0.95em;
       }
       
       #listeners {
-        font-size: 0.85em;
-        opacity: 0.8;
+        font-size: 0.75em;
+        opacity: 0.7;
       }
+
 
 
       /* spectrum + player */
       #spectrum {
-        width: 100%;
+        width: 300px;
         height: 50px;
         background: #0e0e0e;
         image-rendering: pixelated;
@@ -118,9 +141,17 @@
       <p>Now playing:</p>
 
       <div id="nowPlayingWidget">
-        <div id="track">Loading…</div>
-        <div id="listeners"></div>
+        <img id="art" alt="" />
+        <div id="npText">
+          <div id="liveRow">
+            <span id="liveBadge">LIVE</span>
+            <span id="djName"></span>
+          </div>
+          <div id="track">Loading…</div>
+          <div id="listeners"></div>
+        </div>
       </div>
+
 
 
       <!-- Hidden audio element -->
