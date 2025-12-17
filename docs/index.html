@@ -162,7 +162,8 @@
       <audio
         id="audio"
         src="https://stream.jettyradio.com/listen/jettyradio/radio.mp3"
-        crossorigin="anonymous">
+        crossorigin="anonymous"
+        playsinline>
       </audio>
       
       <p>
@@ -252,21 +253,24 @@
   let bufferLength = 0;
   let started = false;
 
+  let sourceNode = null;
+  
   function setupAudioContext() {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
+  
     analyser = audioCtx.createAnalyser();
     analyser.fftSize = 256;
-
+  
     bufferLength = analyser.frequencyBinCount;
     dataArray = new Uint8Array(bufferLength);
-
-    const source = audioCtx.createMediaElementSource(audio);
-    source.connect(analyser);
+  
+    sourceNode = audioCtx.createMediaElementSource(audio);
+    sourceNode.connect(analyser);
     analyser.connect(audioCtx.destination);
-
+  
     canvas.width = bufferLength;
   }
+
 
   function draw() {
     if (!analyser) return;
@@ -284,25 +288,31 @@
     }
   }
 
-  function togglePlay() {
-    // SAFARI REQUIREMENT: create AudioContext on user gesture
-    if (!started) {
-      audio.load();            // important for Safari streams
-      setupAudioContext();
-      draw();
-      started = true;
-    }
+function togglePlay() {
+  if (!started) {
+    audio.muted = true;        // critical Safari hack
+    audio.load();
 
-    if (audio.paused) {
-      audioCtx.resume().then(() => {
-        audio.play();
-        playBtn.textContent = "❚❚ LIVE";
-      });
-    } else {
-      audio.pause();
-      playBtn.textContent = "▶ LIVE";
-    }
+    setupAudioContext();
+    draw();
+    started = true;
   }
+
+  if (audio.paused) {
+    audioCtx.resume().then(() => {
+      audio.play().then(() => {
+        // unmute AFTER playback starts
+        setTimeout(() => {
+          audio.muted = false;
+        }, 100);
+      });
+      playBtn.textContent = "❚❚ LIVE";
+    });
+  } else {
+    audio.pause();
+    playBtn.textContent = "▶ LIVE";
+  }
+}
 
   playBtn.addEventListener("click", togglePlay);
   canvas.addEventListener("click", togglePlay);
