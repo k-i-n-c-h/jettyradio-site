@@ -21,17 +21,17 @@
         background-repeat: repeat;
 
         color: #f2f2f2;
-        font-size: 18px; /* bigger text */
+        font-size: 18px;
       }
 
       .column {
         width: 100%;
         max-width: 480px;
-        padding: 10px; /* tighter */
+        padding: 10px;
         box-sizing: border-box;
         display: flex;
         flex-direction: column;
-        gap: 10px; /* tighter vertical rhythm */
+        gap: 10px;
         align-items: center;
         text-align: center;
       }
@@ -41,7 +41,7 @@
         max-width: 512px;
         height: auto;
         display: block;
-        margin: 0; /* remove default spacing */
+        margin: 0;
       }
 
       p {
@@ -60,8 +60,26 @@
         background: #0e0e0e;
       }
 
-      audio {
+      /* spectrum + player */
+      #spectrum {
         width: 100%;
+        height: 50px;
+        background: #0e0e0e;
+        image-rendering: pixelated;
+        cursor: pointer;
+      }
+
+      #playBtn {
+        background: none;
+        border: 1px solid #444;
+        color: #f2f2f2;
+        padding: 6px 14px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+
+      #playBtn:hover {
+        opacity: 0.85;
       }
     </style>
   </head>
@@ -73,10 +91,13 @@
         alt="Jetty Radio"
         class="logo"
       />
-      <p align="center"><center>Santa Cruz based internet radio</center></p>
+
+      <p>Santa Cruz based internet radio</p>
 
       <p>
-        <a href="https://forms.gle/j2q24MouAZgbefKw5">Submit a show or Volunteer</a>
+        <a href="https://forms.gle/j2q24MouAZgbefKw5">
+          Submit a show or Volunteer
+        </a>
       </p>
 
       <p>Now playing</p>
@@ -86,20 +107,96 @@
         src="https://stream.jettyradio.com/api/nowplaying_static/jettyradio.txt"
       ></iframe>
 
-      <a href="https://stream.jettyradio.com/public/jettyradio/playlist.pls" target="_new">
-        Listen now!
-      </a>
+      <p>
+        <a href="https://stream.jettyradio.com/public/jettyradio/playlist.pls" target="_new">
+          Listen Live!
+        </a>
+      </p>
 
-      <audio controls src="https://stream.jettyradio.com/listen/jettyradio/radio.mp3"></audio>
-      
-      <p><a href="https://instagram.com/jettyradio">@jettyradio on instagram</a></p>
+      <!-- Custom Player -->
+      <canvas id="spectrum"></canvas>
+      <button id="playBtn">▶ LIVE</button>
+
+      <!-- Hidden audio element -->
+      <audio
+        id="audio"
+        src="https://stream.jettyradio.com/listen/jettyradio/radio.mp3"
+        crossorigin="anonymous">
+      </audio>
+
+      <p>
+        <a href="https://instagram.com/jettyradio">@jettyradio on instagram</a>
+      </p>
     </div>
 
     <script>
+      /* now playing refresh */
       setInterval(() => {
-        const iframe = document.getElementById('nowPlaying');
+        const iframe = document.getElementById("nowPlaying");
         iframe.contentWindow.location.reload();
       }, 3000);
+
+      /* audio + spectrum */
+      const audio = document.getElementById("audio");
+      const canvas = document.getElementById("spectrum");
+      const ctx = canvas.getContext("2d");
+      const playBtn = document.getElementById("playBtn");
+
+      const HEIGHT = 50;
+      canvas.height = HEIGHT;
+
+      let audioCtx, analyser, dataArray, bufferLength;
+      let started = false;
+
+      function initAudio() {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioCtx.createAnalyser();
+
+        analyser.fftSize = 128; // controls number of columns
+        bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
+
+        const source = audioCtx.createMediaElementSource(audio);
+        source.connect(analyser);
+        analyser.connect(audioCtx.destination);
+
+        canvas.width = bufferLength; // 1px per band
+      }
+
+      function draw() {
+        requestAnimationFrame(draw);
+        analyser.getByteFrequencyData(dataArray);
+
+        ctx.clearRect(0, 0, canvas.width, HEIGHT);
+
+        for (let i = 0; i < bufferLength; i++) {
+          const value = dataArray[i] / 255;
+          const barHeight = Math.floor(value * HEIGHT);
+
+          ctx.fillStyle = "#f2f2f2";
+          ctx.fillRect(i, HEIGHT - barHeight, 1, barHeight);
+        }
+      }
+
+      function togglePlay() {
+        if (!started) {
+          initAudio();
+          draw();
+          started = true;
+        }
+
+        if (audio.paused) {
+          audioCtx.resume();
+          audio.play();
+          playBtn.textContent = "❚❚ LIVE";
+        } else {
+          audio.pause();
+          playBtn.textContent = "▶ LIVE";
+        }
+      }
+
+      playBtn.addEventListener("click", togglePlay);
+      canvas.addEventListener("click", togglePlay);
     </script>
   </body>
 </html>
