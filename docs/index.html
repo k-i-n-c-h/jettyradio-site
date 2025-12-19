@@ -62,9 +62,11 @@
         width: 100%;
         display: flex;
         gap: 8px;
-        align-items: flex-start;
+        justify-content: center;   /* center horizontally */
+        align-items: center;       /* center vertically */
         font-size: 0.95em;
       }
+
       
       #art {
         width: 40px;
@@ -75,13 +77,15 @@
       }
       
       #npText {
-        flex: 1;
-        text-align: left;
+        text-align: center;
       }
       
       #liveRow {
         font-size: 0.75em;
         margin-bottom: 2px;
+        display: flex;
+        justify-content: center;
+        gap: 6px;
       }
       
       #liveBadge {
