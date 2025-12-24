@@ -1,0 +1,175 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Jetty Radio</title>
+
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Jetty Radio" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: serif;
+        display: flex;
+        justify-content: center;
+
+        background-color: #0e0e0e;
+        background-image: url("bg.png");
+        background-repeat: repeat;
+
+        color: #f2f2f2;
+        font-size: 18px;
+      }
+
+      .column {
+        width: 100%;
+        opacity: 0.97;
+        max-width: 480px;
+        padding: 10px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+        text-align: center;
+      }
+
+      .logo {
+        width: 70%;
+        max-width: 512px;
+        height: auto;
+        display: block;
+        margin: 0;
+      }
+      
+      pre {
+      font-size: 12px;
+      text-align: left
+      }
+
+      p {
+        margin: 4px 0;
+      }
+
+      a {
+        color: #f2f2f2;
+        font-size: 1.05em;
+      }
+
+      #nowPlayingWidget {
+        width: 100%;
+        display: flex;
+        gap: 8px;
+        justify-content: center;   /* center horizontally */
+        align-items: center;       /* center vertically */
+        font-size: 0.95em;
+      }
+
+      
+      #art {
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+        image-rendering: auto;
+        display: none; /* shown only if art exists */
+      }
+      
+      #npText {
+        text-align: center;
+      }
+      
+      #liveRow {
+        font-size: 0.75em;
+        margin-bottom: 2px;
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+      }
+      
+      #liveBadge {
+        display: none;
+        font-weight: bold;
+        margin-right: 6px;
+      }
+      
+      #track {
+        font-size: 0.95em;
+      }
+      
+      #listeners {
+        font-size: 0.75em;
+        opacity: 0.7;
+      }
+
+
+
+      /* spectrum + player */
+      #spectrum {
+        width: 300px;
+        height: 50px;
+        image-rendering: pixelated;
+        cursor: pointer;
+      }
+
+      #playBtn {
+        background: none;
+        border: 1px solid #444;
+        color: #f2f2f2;
+        padding: 6px 14px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+
+      #playBtn:hover {
+        opacity: 0.85;
+      }
+      
+
+      
+    </style>
+  </head>
+
+  <body>
+    <div class="column">
+      <img
+        src="jettyradio2.png"
+        alt="Jetty Radio"
+        class="logo"
+      />
+
+      <h2>Past shows</h2>
+      <p>
+        <small>Dec. 18, 2025</small><br/> <a href="https://stream.jettyradio.com/api/station/1/ondemand/download/6d3916a3b3d5b91d1616ee77" target="_new">
+          Bench Dubs (Recorded live Dec. 16, 2025)</a> w/ <a href="https://www.instagram.com/reverb.canopy/">DJ Tschona</a><br/>
+          <pre class="setlist">Downtown (Basicnoise remix) - Mike Schommer
+Voice 3 - Unknown Artist (Hello Strange)
+De Natura Rerum - Mildiou
+I wanna know (B2) - Jeremy
+Redemption - Delta Funktionen
+Narcosis - Artefakt 
+Missing You (Theo Parrish dub) - Larry Heard 
+BS (Axe on Wax) - Verner
+T.T/F.F - Maurizio 
+Andreaen Sand Dunes - Drexciya
+Program - Ibrahim Alfa
+Free Access Zone 2 - Shinichi Atobe 
+Heard - DJ Duke 
+Electroschock - Electrochic
+But U Do - Thor 
+Arrival - Octal Industries 
+Go With The Flow - Bluetrain
+Montego Bay - Intrusion 
+</pre>
+      </p>
+      <p>
+      <a href="/">Home</a>
+      </p>
+      </div>
+        </body>
+</html>

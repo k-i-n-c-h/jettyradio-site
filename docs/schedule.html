@@ -1,0 +1,158 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Jetty Radio</title>
+
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Jetty Radio" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: serif;
+        display: flex;
+        justify-content: center;
+
+        background-color: #0e0e0e;
+        background-image: url("bg.png");
+        background-repeat: repeat;
+
+        color: #f2f2f2;
+        font-size: 18px;
+      }
+
+      .column {
+        width: 100%;
+        opacity: 0.97;
+        max-width: 480px;
+        padding: 10px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+        text-align: center;
+      }
+
+      .logo {
+        width: 70%;
+        max-width: 512px;
+        height: auto;
+        display: block;
+        margin: 0;
+      }
+      
+      pre {
+      font-size: 12px;
+      text-align: left
+      }
+
+      p {
+        margin: 4px 0;
+      }
+
+      a {
+        color: #f2f2f2;
+      }
+
+      #nowPlayingWidget {
+        width: 100%;
+        display: flex;
+        gap: 8px;
+        justify-content: center;   /* center horizontally */
+        align-items: center;       /* center vertically */
+        font-size: 0.95em;
+      }
+
+      
+      #art {
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+        image-rendering: auto;
+        display: none; /* shown only if art exists */
+      }
+      
+      #npText {
+        text-align: center;
+      }
+      
+      #liveRow {
+        font-size: 0.75em;
+        margin-bottom: 2px;
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+      }
+      
+      #liveBadge {
+        display: none;
+        font-weight: bold;
+        margin-right: 6px;
+      }
+      
+      #track {
+        font-size: 0.95em;
+      }
+      
+      #listeners {
+        font-size: 0.75em;
+        opacity: 0.7;
+      }
+
+
+
+      /* spectrum + player */
+      #spectrum {
+        width: 300px;
+        height: 50px;
+        image-rendering: pixelated;
+        cursor: pointer;
+      }
+
+      #playBtn {
+        background: none;
+        border: 1px solid #444;
+        color: #f2f2f2;
+        padding: 6px 14px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+
+      #playBtn:hover {
+        opacity: 0.85;
+      }
+      
+
+      
+    </style>
+  </head>
+
+  <body>
+    <div class="column">
+     <img
+        src="jettyradio2.png"
+        alt="Jetty Radio"
+        class="logo"
+      />
+
+      <h2>Schedule</h2>
+<iframe src="https://calendar.google.com/calendar/embed?height=500&wkst=1&ctz=America%2FLos_Angeles&showPrint=0&showTitle=0&mode=AGENDA&showTabs=0&showCalendars=0&showNav=0&src=ODhiMzQwNzY2ZGIzY2U2MTJiNjIxYzA1Mjk3ZGMxYmE5YWU3MWUwNGE2N2EyMmE5Yjc0OWRkYTMzNmM4NzhmM0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t&color=%23f4511e" style="border-width:0" width="500" height="500" frameborder="0" scrolling="no"></iframe>
+      <p>
+        <small>Third Saturday 2pm</small><br/> 
+        <img src="https://stream.jettyradio.com/api/station/jettyradio/art/6d3916a3b3d5b91d1616ee77-1766251640.jpg" style="width: 100px"/><br/>
+          {On Location} Dubs w/ <a href="https://www.instagram.com/reverb.canopy/">DJ Tschona</a><br/>
+          
+      </p>
+      <p>
+      <a href="/">Home</a>
+      </p>
+      </div>
+        </body>
+</html>
