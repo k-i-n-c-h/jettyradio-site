@@ -1,0 +1,30 @@
+---
+import Show from '../../components/show.astro'
+import MainLayout from '../../layouts/main-layout.astro'
+import { shows as allShows } from '../../allShows'
+import { getDjSlug } from '../../utils'
+
+export function getStaticPaths() {
+    const allSlugs = new Set(allShows.map(({ dj }) => getDjSlug(dj)))
+    return [...allSlugs].map((slug) => ({ params: { slug } }))
+}
+
+const { slug } = Astro.params
+const shows = allShows.filter((show) => getDjSlug(show.dj) === slug)
+---
+
+<MainLayout title="Archive | Jetty Radio">
+    <h2>{shows[0] ? shows[0].dj : slug}</h2>
+    {
+        shows.map((show) => (
+            <Show
+                dj={show.dj}
+                title={show.title}
+                date={show.date}
+                setlist={show.setlist}
+                image={show.image}
+                downloadLink={show.downloadLink}
+            />
+        ))
+    }
+</MainLayout>

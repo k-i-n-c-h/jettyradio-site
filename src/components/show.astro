@@ -1,0 +1,40 @@
+---
+import { getDjSlug } from '../utils'
+interface Props {
+    dj: string
+    title: string
+    date: Date
+    setlist: string
+    image: string
+    downloadLink: string
+}
+const { dj, title, date, setlist, image, downloadLink } = Astro.props
+---
+
+<div class="show">
+    <small
+        >{
+            date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+            })
+        }</small
+    >
+    <img src={image} width="200" />
+    <span
+        ><a href={downloadLink} target="_blank">
+            {title}
+        </a>
+        w/ <a href={`/dj/${getDjSlug(dj)}`}>{dj}</a></span
+    >
+
+    {
+        setlist && (
+            <details class="setlist">
+                <summary>setlist</summary>
+                <pre>{setlist}</pre>
+            </details>
+        )
+    }
+</div>

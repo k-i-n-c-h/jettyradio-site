@@ -1,0 +1,134 @@
+body {
+    margin: 0;
+    padding: 0;
+    font-family: serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    background-color: #0e0e0e;
+    background-image: url("/bg.png");
+    background-repeat: repeat;
+
+    color: #f2f2f2;
+    font-size: 18px;
+}
+
+.column {
+    width: 100%;
+    opacity: 0.97;
+    max-width: 480px;
+    padding: 10px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    text-align: center;
+}
+
+p {
+    margin: 4px 0;
+}
+
+a {
+    color: #f2f2f2;
+    font-size: 1.05em;
+}
+
+.show {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 24px;
+}
+
+.setlist {
+    pre {
+        font-size: 12px;
+    }
+
+    summary {
+        cursor: pointer;
+        padding: 8px;
+    }
+}
+
+.embedded-calendar {
+    width: 90vw;
+    max-width: 500px;
+    height: 300px;
+    border-width: 0;
+}
+
+
+
+/* spectrum + player */
+#spectrum {
+    width: 300px;
+    height: 50px;
+    image-rendering: pixelated;
+    cursor: pointer;
+    margin-bottom: 8px;
+}
+
+#playBtn {
+    background: none;
+    border: 1px solid #444;
+    color: #f2f2f2;
+    padding: 6px 14px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+#playBtn:hover {
+    opacity: 0.85;
+}
+
+#nowPlayingWidget {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    /* center horizontally */
+    align-items: center;
+    /* center vertically */
+    font-size: 0.95em;
+}
+
+#art {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    image-rendering: auto;
+    display: none;
+    /* shown only if art exists */
+}
+
+#npText {
+    text-align: center;
+}
+
+#liveRow {
+    font-size: 0.75em;
+    margin-bottom: 2px;
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+}
+
+#liveBadge {
+    display: none;
+    font-weight: bold;
+    margin-right: 6px;
+}
+
+#track {
+    font-size: 0.95em;
+}
+
+#listeners {
+    font-size: 0.75em;
+    opacity: 0.7;
+}
