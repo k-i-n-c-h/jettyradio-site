@@ -1,0 +1,52 @@
+---
+import logo from '../assets/jettyradio2.png'
+---
+
+<style>
+  header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  nav {
+    text-align: center;
+  }
+
+  .subtitle {
+    font-size: 16px;
+    font-family: cursive;
+  }
+
+  .logo img {
+    max-width: 312px;
+    height: auto;
+    display: block;
+    margin: 0;
+  }
+
+  .logo {
+    display: flex;
+    justify-content: center;
+  }
+</style>
+<header>
+  <a href="/" class="logo"><img src={logo.src} alt="Jetty Radio" /></a>
+  <p class="subtitle">Santa Cruz-based internet radio</p>
+</header>
+<nav>
+  <a
+    href="https://stream.jettyradio.com/public/jettyradio/playlist.pls"
+    target="_blank"
+  >
+    Listen Live</a
+  > 𒀭
+  <a href="/">Home</a> 𒀭
+  <a href="/schedule">Schedule</a> 𒀭
+  <a href="/archive">Archives</a>
+  <br />
+  <a href="https://instagram.com/jettyradio" target="_blank">Instagram</a> 𒀭
+  <a href="https://www.patreon.com/c/jettyradio" target="_blank">Patreon</a>
+</nav>
