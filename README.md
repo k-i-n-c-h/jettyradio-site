@@ -1,10 +1,35 @@
 # jettyradio-site
+```
+     ____.       __    __           __________             .___.__        
+    |    | _____/  |__/  |_ ___.__. \______   \_____     __| _/|__| ____  
+    |    |/ __ \   __\   __<   |  |  |       _/\__  \   / __ | |  |/  _ \ 
+/\__|    \  ___/|  |  |  |  \___  |  |    |   \ / __ \_/ /_/ | |  (  <_> )
+\________|\___  >__|  |__|  / ____|  |____|_  /(____  /\____ | |__|\____/ 
+              \/            \/              \/      \/      \/            
+```
 
 Santa Cruz-based internet radio
 
 
 ## Contributing
 The site is built using [Astro](https://astro.build/), a framework that allows us to write normal HTML, CSS, and Javascript in a reusable way.
+
+### Adding shows to archive
+
+The shows are in `src/allShows.js`. All you need to do is copy the top existing show, add to the top, and fill out the right details! Keeping the shows like this lets us use the info in different ways, from filtering them by DJ or sorting by date. 
+```js
+{
+    dj: "albus fr33ky",
+    title: "wave of unusual size and force",
+    date: new Date(2026, 2, 12), ///
+    setlist: `
+    Too Much Fun at the Temple of Doom - Simple Symmetry
+    Explanation Of The Funk - Glenn Echo & Daniel Meinecke`,
+    image: "https://stream.jettyradio.com/api/station/jettyradio/art/7c561f4a6746d2d6e206d97f-1773291267.jpg",
+    downloadLink: "https://stream.jettyradio.com/api/station/1/ondemand/download/7c561f4a6746d2d6e206d97f",
+  },
+```
+This is also a step closer to just querying AzuraCast for the shows and having it create this list for us automatically. We'd have to be more intentional of how we add the shows (like being consistent with naming, using metadata for adding setlists and any other info, can get creative), but it'll pay off as we expand shows & programming. life is all about scaling, you know?
 
 ### File Structure
 #### `src/pages`
