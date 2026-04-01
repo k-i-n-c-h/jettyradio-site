@@ -1,40 +1,191 @@
 ---
-import { getDjSlug } from '../utils'
+import { Icon } from 'astro-icon/components'
+import { formatShowDate, getDjSlug } from '../utils'
 interface Props {
-    dj: string
-    title: string
-    date: Date
-    setlist: string
-    image: string
-    downloadLink: string
+  dj: string
+  title: string
+  date: Date
+  setlist: string
+  image: string
+  downloadLink: string
 }
 const { dj, title, date, setlist, image, downloadLink } = Astro.props
 ---
 
+<style lang="scss" define:vars={{ thumbnailSize: '130px' }}>
+  .show {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+    font-family: sans-serif;
+    padding-inline: 20px;
+    &:hover {
+      .transport-button {
+        display: flex;
+      }
+    }
+  }
+
+  .thumbnail {
+    width: var(--thumbnailSize);
+    height: var(--thumbnailSize);
+  }
+  .thumbnail-container {
+    position: relative;
+    height: var(--thumbnailSize);
+  }
+  .transport-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    height: var(--thumbnailSize);
+    width: var(--thumbnailSize);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: white;
+    opacity: 0.7;
+    cursor: pointer;
+
+    &:active {
+      opacity: 0.9;
+    }
+  }
+  .transport-button span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 50px;
+    width: 50px;
+    background: #0009;
+    border-radius: 50%;
+  }
+  .show-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: var(--thumbnailSize);
+  }
+  .show-date {
+    font-size: 0.75em;
+    font-style: italic;
+    color: #aaa;
+  }
+  .dj {
+    a {
+      font-size: 0.8em;
+      color: #ccc;
+    }
+  }
+  .details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .setlist {
+    pre {
+      font-size: 12px;
+    }
+
+    summary {
+      cursor: pointer;
+      padding: 8px;
+      font-size: 0.9em;
+    }
+  }
+  .button-group {
+    display: flex;
+    gap: 8px;
+  }
+  .icon-button {
+    height: 30px;
+    width: 30px;
+    border: 1px solid #aaa;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    background: transparent;
+    color: #fff;
+    justify-content: center;
+    font-size: 34px;
+    cursor: pointer;
+    &:hover {
+      background: #fff2;
+    }
+  }
+</style>
 <div class="show">
-    <small
-        >{
-            date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-            })
-        }</small
-    >
-    <img src={image} width="200" />
-    <span
-        ><a href={downloadLink} target="_blank">
-            {title}
-        </a>
-        w/ <a href={`/dj/${getDjSlug(dj)}`}>{dj}</a></span
+  <div class="thumbnail-container">
+    <button
+      class="play-show-btn transport-button"
+      data-src={downloadLink}
+      data-thumbnail={image}
+      data-title={title}
+      data-dj={dj}><span><Icon name="play" size="30" /></span></button
     >
 
-    {
+    <img src={image} class="thumbnail" />
+  </div>
+  <div class="show-content">
+    <div class="details">
+      <div class="show-date">{formatShowDate(date)}</div>
+      <div class="title">
+        <div class="show-title">{title}</div>
+        <div class="dj"><a href={`/dj/${getDjSlug(dj)}`}>{dj}</a></div>
+      </div>
+      {
         setlist && (
-            <details class="setlist">
-                <summary>setlist</summary>
-                <pre>{setlist}</pre>
-            </details>
+          <details class="setlist">
+            <summary>Setlist</summary>
+            <pre>{setlist}</pre>
+          </details>
         )
-    }
+      }
+    </div>
+    <div class="button-group">
+      <a class="download icon-button" aria-label="download" href={downloadLink}
+        ><Icon name="download" size="18" /></a
+      >
+      <button
+        class="play-show-btn icon-button"
+        aria-label="play"
+        data-src={downloadLink}
+        data-thumbnail={image}
+        data-title={title}
+        data-dj={dj}><Icon name="play" /></button
+      >
+    </div>
+  </div>
 </div>
+<script>
+  import {
+    loadPlayer,
+    togglePlayer,
+    setPlayerInfo,
+    unloadLiveRadioInfo,
+  } from '../lib/player'
+  function setupButtons() {
+    document.querySelectorAll('.play-show-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const data = (btn as HTMLElement).dataset
+        unloadLiveRadioInfo()
+        loadPlayer(data.src ?? '')
+        setPlayerInfo({
+          thumbnail: data.thumbnail ?? '',
+          title: data.title ?? '',
+          dj: data.dj ?? '',
+          live: false,
+        })
+        togglePlayer(true)
+      })
+    })
+  }
+
+  document.addEventListener('astro:page-load', setupButtons)
+</script>
