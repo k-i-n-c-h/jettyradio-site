@@ -1,12 +1,60 @@
 ---
+import { Icon } from 'astro-icon/components'
 import MainLayout from '../layouts/main-layout.astro'
+const icsUrl =
+    'https://calendar.google.com/calendar/ical/88b340766db3ce612b621c05297dc1ba9ae71e04a67a22a9b749dda336c878f3%40group.calendar.google.com/public/basic.ics'
+const gCalUrl = `https://www.google.com/calendar/render?cid=${icsUrl}`
 ---
 
+<style lang="scss">
+    .link-group {
+        display: flex;
+        gap: 38px;
+        margin-bottom: 12px;
+    }
+    .link {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.75em;
+        font-family: sans-serif;
+        color: #ddd;
+        text-decoration: none;
+        .icon-container {
+            height: 60px;
+            width: 60px;
+            border: 1px solid #aaa;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 34px;
+        }
+        &:hover .icon-container {
+            background: #fff2;
+        }
+    }
+</style>
 <MainLayout title="Schedule | Jetty Radio">
     <h2>Schedule</h2>
-    <a href="https://calendar.google.com/calendar/ical/88b340766db3ce612b621c05297dc1ba9ae71e04a67a22a9b749dda336c878f3%40group.calendar.google.com/public/basic.ics" target="_blank"
-        >Add to your calendar</a
-    >
+    <div class="link-group">
+        <a
+            href={gCalUrl}
+            target="_blank"
+            aria-label="Add to google calendar"
+            class="link"
+            ><span class="icon-container"
+                ><Icon name="gcal" style="stroke-width: 1;" /></span
+            >
+            Add to GCal</a
+        >
+        <a href={icsUrl} aria-label="Download .ics file" class="link"
+            ><span class="icon-container"
+                ><Icon name="cal" style="stroke-width: 0.7;" /></span
+            >Download .ics</a
+        >
+    </div>
     <iframe
         class="embedded-calendar"
         src="https://calendar.google.com/calendar/embed?height=500&wkst=1&ctz=America%2FLos_Angeles&showPrint=0&showTitle=0&mode=AGENDA&showTabs=0&showCalendars=0&showNav=0&src=ODhiMzQwNzY2ZGIzY2U2MTJiNjIxYzA1Mjk3ZGMxYmE5YWU3MWUwNGE2N2EyMmE5Yjc0OWRkYTMzNmM4NzhmM0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t&color=%23f4511e"
