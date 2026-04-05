@@ -1,7 +1,7 @@
 ---
 import '../styles.css'
 import Header from '../components/header.astro'
-import Player from '../components/player.astro'
+import Player from '../components/new-player.astro'
 import { ClientRouter } from 'astro:transitions'
 const { title } = Astro.props
 ---
@@ -26,5 +26,7 @@ const { title } = Astro.props
       <slot />
     </main>
     <ClientRouter />
+    <script>
+    </script>
   </body>
 </html>

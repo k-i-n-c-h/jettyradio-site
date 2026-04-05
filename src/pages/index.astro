@@ -1,12 +1,44 @@
 ---
+import { Icon } from 'astro-icon/components'
 import Chat from '../components/chat.astro'
-import NowPlaying from '../components/nowPlaying.astro'
 import WebCounter from '../components/webCounter.astro'
 import MainLayout from '../layouts/main-layout.astro'
 ---
 
+<style lang="scss">
+  .pls-download {
+    display: flex;
+    align-items: center;
+    font-size: 0.8em;
+    color: #ddd;
+    gap: 8px;
+    border: 1px solid #aaa;
+    border-radius: 20px;
+    padding: 8px 16px;
+    margin-block: 8px;
+    text-decoration: none;
+    font-family: sans-serif;
+    width: fit-content;
+    align-self: center;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        background: #fff1;
+      }
+    }
+    &:active {
+      background: #fff2;
+    }
+  }
+</style>
+
 <MainLayout title="Jetty Radio">
-	<NowPlaying />
-	<Chat />
-	<WebCounter />
+  <a
+    class="pls-download"
+    href="https://stream.jettyradio.com/public/jettyradio/playlist.pls"
+  >
+    <Icon name="download" />Listen in your media player
+  </a>
+  <Chat />
+  <WebCounter />
 </MainLayout>

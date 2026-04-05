@@ -2,67 +2,76 @@
 import { Icon } from 'astro-icon/components'
 import MainLayout from '../layouts/main-layout.astro'
 const icsUrl =
-    'https://calendar.google.com/calendar/ical/88b340766db3ce612b621c05297dc1ba9ae71e04a67a22a9b749dda336c878f3%40group.calendar.google.com/public/basic.ics'
+  'https://calendar.google.com/calendar/ical/88b340766db3ce612b621c05297dc1ba9ae71e04a67a22a9b749dda336c878f3%40group.calendar.google.com/public/basic.ics'
 const gCalUrl = `https://www.google.com/calendar/render?cid=${icsUrl}`
 ---
 
 <style lang="scss">
-    .link-group {
-        display: flex;
-        gap: 38px;
-        margin-bottom: 12px;
+  .link-group {
+    display: flex;
+    justify-content: center;
+    gap: 38px;
+    margin-bottom: 12px;
+  }
+  .link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75em;
+    font-family: sans-serif;
+    color: #ddd;
+    text-decoration: none;
+    .icon-container {
+      height: 60px;
+      width: 60px;
+      border: 1px solid #aaa;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
     }
-    .link {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-        font-size: 0.75em;
-        font-family: sans-serif;
-        color: #ddd;
-        text-decoration: none;
-        .icon-container {
-            height: 60px;
-            width: 60px;
-            border: 1px solid #aaa;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 34px;
-        }
-        &:hover .icon-container {
-            background: #fff2;
-        }
+    &:hover .icon-container {
+      background: #fff2;
     }
+  }
+  .calendar-container {
+    display: flex;
+    justify-content: center;
+  }
+  small {
+    text-align: center;
+  }
 </style>
 <MainLayout title="Schedule | Jetty Radio">
-    <h2>Schedule</h2>
-    <div class="link-group">
-        <a
-            href={gCalUrl}
-            target="_blank"
-            aria-label="Add to google calendar"
-            class="link"
-            ><span class="icon-container"
-                ><Icon name="gcal" style="stroke-width: 1;" /></span
-            >
-            Add to GCal</a
-        >
-        <a href={icsUrl} aria-label="Download .ics file" class="link"
-            ><span class="icon-container"
-                ><Icon name="cal" style="stroke-width: 0.7;" /></span
-            >Download .ics</a
-        >
-    </div>
-    <iframe
-        class="embedded-calendar"
-        src="https://calendar.google.com/calendar/embed?height=500&wkst=1&ctz=America%2FLos_Angeles&showPrint=0&showTitle=0&mode=AGENDA&showTabs=0&showCalendars=0&showNav=0&src=ODhiMzQwNzY2ZGIzY2U2MTJiNjIxYzA1Mjk3ZGMxYmE5YWU3MWUwNGE2N2EyMmE5Yjc0OWRkYTMzNmM4NzhmM0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t&color=%23f4511e"
-        frameborder="0"
-        scrolling="no"></iframe>
+  <h2 class="page-title">Schedule</h2>
+  <div class="link-group">
+    <a
+      href={gCalUrl}
+      target="_blank"
+      aria-label="Add to google calendar"
+      class="link"
+      ><span class="icon-container"
+        ><Icon name="gcal" style="stroke-width: 1;" /></span
+      >
+      Add to GCal</a
+    >
+    <a href={icsUrl} aria-label="Download .ics file" class="link"
+      ><span class="icon-container"
+        ><Icon name="cal" style="stroke-width: 0.7;" /></span
+      >Download .ics</a
+    >
+  </div>
+  <div class="calendar-container">
+  <iframe
+    class="embedded-calendar"
+    src="https://calendar.google.com/calendar/embed?height=500&wkst=1&ctz=America%2FLos_Angeles&showPrint=0&showTitle=0&mode=AGENDA&showTabs=0&showCalendars=0&showNav=0&src=ODhiMzQwNzY2ZGIzY2U2MTJiNjIxYzA1Mjk3ZGMxYmE5YWU3MWUwNGE2N2EyMmE5Yjc0OWRkYTMzNmM4NzhmM0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t&color=%23f4511e"
+    frameborder="0"
+    scrolling="no"></iframe></div>
 
-    <hr style="width:100%" />
-    <small>
+  <hr style="width:100%" />
+  <small>
         Daily 10am, 3pm & 5:50pm 𒀭 Monthly Dispatch w/ <a href="https://www.instagram.com/offtherecord.sc/" target="_blank">Off the Record</a> <br />
         First Sundays 7-8pm 𒀭 Signal Chain w/ <a href="https://www.instagram.com/_wyllie_/" target="_blank">Wyllie</a><br />
         First Tuesdays 6-7pm 𒀭 MXO radio w/ <a href="https://www.instagram.com/gossamors/" target="_blank">MIMIXOMI</a><br />
@@ -81,6 +90,6 @@ const gCalUrl = `https://www.google.com/calendar/render?cid=${icsUrl}`
         Third Saturdays 2-3pm 𒀭 {'{On location}'} dubs w/ <a href="https://www.instagram.com/reverb.canopy/" target="_blank">DJ Tschona</a><br />
         Fourth Thursdays 7-8pm 𒀭 forgetting my manners w/ <a href="https://www.instagram.com/rikvinegar/" target="_blank">r.downstairs</a><br />
         Fourth Sundays 7-8pm 𒀭 SUONO GLOBALE w/ <a href="https://www.instagram.com/joeyaliotti/" target="_blank">PRIMA</a></small
-    ><br />
-    <hr style="width:100%" />
+    >
+  <hr style="width:100%" />
 </MainLayout>
