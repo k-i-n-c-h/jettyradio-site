@@ -1,0 +1,104 @@
+<style>
+  #visualizer {
+    position: absolute;
+    opacity: 0.3;
+    bottom: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    pointer-events: none;
+    image-rendering: pixelated;
+    z-index: 5;
+  }
+</style>
+<canvas id="visualizer" width="512"></canvas>
+<script>
+  import { getAnalyzer, getIsPlaying } from '../lib/player'
+  const canvas = document.getElementById('visualizer') as HTMLCanvasElement
+  const ctx = canvas.getContext('2d')
+
+  let renderCancel: (() => void) | null = null
+  const renderWithAnalyzer = (analyzer: AnalyserNode) => {
+    if (!ctx) return
+    console.log('rendering with analyzer')
+    const bufferLength = analyzer.frequencyBinCount
+    const dataArray = new Uint8Array(bufferLength)
+
+    let cancelled = false
+    renderCancel = () => {
+      cancelled = true
+    }
+    ctx.fillStyle = '#fff'
+    const loop = () => {
+      if (cancelled) return
+      analyzer.getByteFrequencyData(dataArray)
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      const width = canvas.width / dataArray.length
+      const height = canvas.height
+      for (let i = 0; i < dataArray.length; i++) {
+        const v = dataArray[i] / 255
+        const h = Math.floor(v * height)
+        ctx.fillRect(i * width, height - h, width, h)
+      }
+      requestAnimationFrame(loop)
+    }
+    loop()
+  }
+
+  const renderWaves = () => {
+    if (!ctx) return
+    let cancelled = false
+    renderCancel = () => {
+      cancelled = true
+    }
+    const BAR_COUNT = 60
+    const BAR_GAP = 4
+    const AMPLITUDE = 30
+    const BASE_HEIGHT = 30
+    const SPEED = 0.01
+    const WAVE_FREQ = 0.3
+
+    let phase = 0
+
+    const loop = () => {
+      if (cancelled) return
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      const barWidth = (canvas.width - (BAR_COUNT - 1) * BAR_GAP) / BAR_COUNT
+
+      if (!getIsPlaying()) {
+        return requestAnimationFrame(loop)
+      }
+
+      for (let i = 0; i < BAR_COUNT; i++) {
+        const x = i * (barWidth + BAR_GAP)
+        // using 3 sin waves for randomness
+        const height =
+          BASE_HEIGHT +
+          Math.sin(i * WAVE_FREQ + phase) * AMPLITUDE * 0.6 +
+          Math.sin(i * WAVE_FREQ * 2.1 + phase * 1.5) * AMPLITUDE * 0.3 +
+          Math.sin(i * WAVE_FREQ * 3.7 + phase * 0.6) * AMPLITUDE * 0.1
+        const y = canvas.height - height
+
+        ctx.fillStyle = '#fff'
+        ctx.fillRect(x, y, barWidth, height)
+      }
+
+      phase += SPEED
+
+      requestAnimationFrame(loop)
+    }
+    loop()
+  }
+
+  const render = () => {
+    renderCancel?.()
+    const analyzer = getAnalyzer()
+    if (analyzer) {
+      renderWithAnalyzer(analyzer)
+    } else {
+      renderWaves()
+    }
+  }
+
+  window.addEventListener('player:load', () => render())
+</script>

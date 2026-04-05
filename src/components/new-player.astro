@@ -1,0 +1,283 @@
+---
+import { Icon } from "astro-icon/components";
+import Visualizer from "./visualizer.astro";
+---
+
+<style lang="scss" define:vars={{ thumbnailSize: "100px" }}>
+  .player {
+    display: flex;
+    max-width: 700px;
+    overflow: hidden;
+    width: 100%;
+    position: sticky;
+    top: 0px;
+    margin-block: 24px;
+    z-index: 9;
+    background: #000d;
+    font-family: sans-serif;
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        .transport-button {
+          opacity: 1;
+        }
+      }
+    }
+  }
+  #thumbnail {
+    width: var(--thumbnailSize);
+    height: var(--thumbnailSize);
+  }
+  .content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex-grow: 1;
+    padding-top: 0.5em;
+    padding-bottom: 0.2em;
+    position: relative;
+  }
+  #title {
+    font-size: 0.9em;
+    font-weight: 600;
+    @media (max-width: 500px) {
+      font-size: 0.75em;
+    }
+  }
+  #dj {
+    font-size: 0.75em;
+    color: #aaa;
+  }
+  .time {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.5em;
+    font-family: monospace;
+  }
+  .thumbnail-container {
+    position: relative;
+    height: var(--thumbnailSize);
+  }
+  .transport-button {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    height: var(--thumbnailSize);
+    width: var(--thumbnailSize);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: white;
+    opacity: 0.7;
+    cursor: pointer;
+  }
+  .transport-button span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 50px;
+    width: 50px;
+    background: #0009;
+    border-radius: 50%;
+  }
+  .pause-icon {
+    display: none;
+  }
+  .playing .pause-icon {
+    display: block;
+  }
+  .playing .play-icon {
+    display: none;
+  }
+  .header {
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+    padding-inline: 16px;
+    z-index: 6;
+  }
+  .controls {
+    padding-inline: 16px;
+    z-index: 6;
+  }
+  #on-air-container {
+    white-space: nowrap;
+  }
+  #listen-live-button {
+    background: black;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 30px;
+    border: 1px solid #999;
+    padding: 8px 12px;
+    cursor: pointer;
+  }
+  #listen-live-button:hover {
+    svg {
+      color: rgb(242, 89, 89);
+    }
+  }
+
+  #on-air {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    background: #fff1;
+    border-radius: 30px;
+    svg {
+      color: rgb(242, 89, 89);
+    }
+  }
+
+  #on-air-live {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    background: rgb(242, 89, 89);
+    border-radius: 30px;
+  }
+
+  #on-air-container.is-on-air #listen-live-button {
+    display: none;
+  }
+
+  #on-air-container.is-on-air:not(.live) #on-air {
+    display: flex;
+  }
+
+  #on-air-container.is-on-air.live #on-air-live {
+    display: flex;
+  }
+
+  #listeners {
+    font-size: 0.75em;
+    color: #aaa;
+    text-align: right;
+  }
+  #scrubber-container {
+    display: none;
+  }
+  #scrubber {
+    position: relative;
+    height: 4px;
+    width: 100%;
+
+    @media (hover: hover) and (pointer: fine) {
+      #scrubber::-webkit-slider-thumb {
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      #scrubber::-moz-range-thumb {
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      #scrubber:hover::-webkit-slider-thumb {
+        opacity: 1;
+      }
+      #scrubber:hover::-moz-range-thumb {
+        opacity: 1;
+      }
+    }
+  }
+</style>
+<audio id="audio" transition:persist></audio>
+<audio id="audio-live" crossorigin="anonymous" transition:persist></audio>
+<div class="player" transition:persist>
+  <div class="thumbnail-container">
+    <button id="transport-button" class="transport-button"
+      ><span
+        ><Icon name="play" class="play-icon" size="30" /><Icon
+          name="pause"
+          class="pause-icon"
+          size="30"
+        /></span
+      ></button
+    >
+    <img id="thumbnail" src="/apple-touch-icon.png" />
+  </div>
+  <div class="content">
+    <Visualizer />
+    <div class="header">
+      <div class="show-header">
+        <div id="title"></div>
+        <div id="dj"></div>
+      </div>
+      <div id="on-air-container">
+        <button id="listen-live-button"><Icon name="live" />Listen Live</button>
+        <div id="on-air">
+          <Icon name="live" />On Air
+        </div>
+        <div id="on-air-live">
+          <Icon name="live" />Live
+        </div>
+      </div>
+    </div>
+    <div class="controls">
+      <div id="scrubber-container">
+        <input
+          type="range"
+          id="scrubber"
+          min="0"
+          max="100"
+          value="0"
+          step="0.001"
+        />
+        <div class="time">
+          <div id="track-current"></div>
+          <div id="track-duration"></div>
+        </div>
+      </div>
+      <div class="transport"></div>
+      <div id="listeners"></div>
+    </div>
+  </div>
+</div>
+<script>
+  import {
+    togglePlayer,
+    _setNowPlaying,
+    loadLiveRadioInfo,
+    loadLiveRadioPlayer,
+  } from "../lib/player";
+  const playBtn = document.getElementById(
+    "transport-button",
+  ) as HTMLButtonElement;
+  const liveBtn = document.getElementById(
+    "listen-live-button",
+  ) as HTMLButtonElement;
+  playBtn.addEventListener("click", () => togglePlayer());
+  liveBtn.addEventListener("click", async () => {
+    loadLiveRadioInfo();
+    loadLiveRadioPlayer();
+    togglePlayer(true);
+  });
+
+  const socket = new WebSocket(
+    "wss://stream.jettyradio.com/api/live/nowplaying/websocket",
+  );
+
+  socket.onopen = () => {
+    socket.send(
+      JSON.stringify({
+        subs: { "station:jettyradio": { recover: true } },
+      }),
+    );
+  };
+
+  socket.onmessage = (e) => {
+    const json = JSON.parse(e.data);
+    if (json.pub?.data?.np) {
+      _setNowPlaying(json.pub.data.np);
+    }
+  };
+
+  loadLiveRadioInfo();
+</script>
