@@ -3,21 +3,23 @@ import { Icon } from 'astro-icon/components'
 import Visualizer from './visualizer.astro'
 ---
 
-<style define:vars={{ thumbnailSize: '100px' }}>
+<style lang="scss" define:vars={{ thumbnailSize: '100px' }}>
   .player {
     display: flex;
     max-width: 700px;
     overflow: hidden;
     width: 100%;
     position: sticky;
-    top: 10px;
+    top: 0px;
     margin-block: 24px;
     z-index: 9;
     background: #000d;
     font-family: sans-serif;
-    &:hover {
-      .transport-button {
-        opacity: 1;
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        .transport-button {
+          opacity: 1;
+        }
       }
     }
   }
@@ -31,19 +33,19 @@ import Visualizer from './visualizer.astro'
     justify-content: space-between;
     flex-grow: 1;
     padding-top: 0.5em;
-    padding-bottom: 0.5em;
+    padding-bottom: 0.2em;
     position: relative;
   }
   #title {
     font-size: 0.9em;
     font-weight: 600;
+    @media (max-width: 500px) {
+      font-size: 0.75em;
+    }
   }
   #dj {
     font-size: 0.75em;
     color: #aaa;
-  }
-  #scrubber-container {
-    display: none;
   }
   .time {
     display: flex;
@@ -160,24 +162,30 @@ import Visualizer from './visualizer.astro'
     color: #aaa;
     text-align: right;
   }
+  #scrubber-container {
+    display: none;
+  }
   #scrubber {
     position: relative;
     height: 4px;
     width: 100%;
-  }
-  #scrubber::-webkit-slider-thumb {
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-  #scrubber::-moz-range-thumb {
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-  #scrubber:hover::-webkit-slider-thumb {
-    opacity: 1;
-  }
-  #scrubber:hover::-moz-range-thumb {
-    opacity: 1;
+
+    @media (hover: hover) and (pointer: fine) {
+      #scrubber::-webkit-slider-thumb {
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      #scrubber::-moz-range-thumb {
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      #scrubber:hover::-webkit-slider-thumb {
+        opacity: 1;
+      }
+      #scrubber:hover::-moz-range-thumb {
+        opacity: 1;
+      }
+    }
   }
 </style>
 <audio id="audio" transition:persist></audio>

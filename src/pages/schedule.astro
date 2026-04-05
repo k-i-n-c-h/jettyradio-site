@@ -36,7 +36,10 @@ const gCalUrl = `https://www.google.com/calendar/render?cid=${icsUrl}`
       background: #fff2;
     }
   }
-
+  .calendar-container {
+    display: flex;
+    justify-content: center;
+  }
   small {
     text-align: center;
   }
@@ -60,11 +63,12 @@ const gCalUrl = `https://www.google.com/calendar/render?cid=${icsUrl}`
       >Download .ics</a
     >
   </div>
+  <div class="calendar-container">
   <iframe
     class="embedded-calendar"
     src="https://calendar.google.com/calendar/embed?height=500&wkst=1&ctz=America%2FLos_Angeles&showPrint=0&showTitle=0&mode=AGENDA&showTabs=0&showCalendars=0&showNav=0&src=ODhiMzQwNzY2ZGIzY2U2MTJiNjIxYzA1Mjk3ZGMxYmE5YWU3MWUwNGE2N2EyMmE5Yjc0OWRkYTMzNmM4NzhmM0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t&color=%23f4511e"
     frameborder="0"
-    scrolling="no"></iframe>
+    scrolling="no"></iframe></div>
 
   <hr style="width:100%" />
   <small>
