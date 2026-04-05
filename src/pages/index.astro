@@ -1,8 +1,8 @@
 ---
-import { Icon } from 'astro-icon/components'
-import Chat from '../components/chat.astro'
-import WebCounter from '../components/webCounter.astro'
-import MainLayout from '../layouts/main-layout.astro'
+import { Icon } from "astro-icon/components";
+import Chat from "../components/chat.astro";
+import WebCounter from "../components/webCounter.astro";
+import MainLayout from "../layouts/main-layout.astro";
 ---
 
 <style lang="scss">
@@ -20,8 +20,11 @@ import MainLayout from '../layouts/main-layout.astro'
     font-family: sans-serif;
     width: fit-content;
     align-self: center;
-    &:hover {
-      background: #fff1;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        background: #fff1;
+      }
     }
     &:active {
       background: #fff2;

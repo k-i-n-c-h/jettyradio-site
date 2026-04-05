@@ -1,18 +1,18 @@
 ---
-import { Icon } from 'astro-icon/components'
-import { formatShowDate, getDjSlug } from '../utils'
+import { Icon } from "astro-icon/components";
+import { formatShowDate, getDjSlug } from "../utils";
 interface Props {
-  dj: string
-  title: string
-  date: Date
-  setlist: string
-  image: string
-  downloadLink: string
+  dj: string;
+  title: string;
+  date: Date;
+  setlist: string;
+  image: string;
+  downloadLink: string;
 }
-const { dj, title, date, setlist, image, downloadLink } = Astro.props
+const { dj, title, date, setlist, image, downloadLink } = Astro.props;
 ---
 
-<style lang="scss" define:vars={{ thumbnailSize: '130px' }}>
+<style lang="scss" define:vars={{ thumbnailSize: "130px" }}>
   .show {
     display: flex;
     flex-direction: row;
@@ -21,9 +21,11 @@ const { dj, title, date, setlist, image, downloadLink } = Astro.props
     margin-bottom: 24px;
     font-family: sans-serif;
     padding-inline: 20px;
-    &:hover {
-      .transport-button {
-        display: flex;
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        .transport-button span {
+          display: flex;
+        }
       }
     }
   }
@@ -43,8 +45,8 @@ const { dj, title, date, setlist, image, downloadLink } = Astro.props
     transform: translate(-50%, -50%);
     height: var(--thumbnailSize);
     width: var(--thumbnailSize);
-    display: none;
     align-items: center;
+    display: flex;
     justify-content: center;
     background: transparent;
     border: none;
@@ -57,7 +59,7 @@ const { dj, title, date, setlist, image, downloadLink } = Astro.props
     }
   }
   .transport-button span {
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     height: 50px;
@@ -68,6 +70,7 @@ const { dj, title, date, setlist, image, downloadLink } = Astro.props
   .show-content {
     display: flex;
     flex-direction: column;
+    gap: 4px;
     justify-content: space-between;
     min-height: var(--thumbnailSize);
   }
@@ -86,16 +89,16 @@ const { dj, title, date, setlist, image, downloadLink } = Astro.props
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
+    gap: 2px;
   }
   .setlist {
+    padding-block: 8px;
     pre {
       font-size: 12px;
     }
 
     summary {
       cursor: pointer;
-      padding: 8px;
       font-size: 0.9em;
     }
   }
@@ -169,23 +172,23 @@ const { dj, title, date, setlist, image, downloadLink } = Astro.props
     togglePlayer,
     setPlayerInfo,
     unloadLiveRadioInfo,
-  } from '../lib/player'
+  } from "../lib/player";
   function setupButtons() {
-    document.querySelectorAll('.play-show-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const data = (btn as HTMLElement).dataset
-        unloadLiveRadioInfo()
-        loadPlayer(data.src ?? '')
+    document.querySelectorAll(".play-show-btn").forEach((btn) => {
+      btn.addEventListener("pointerdown", () => {
+        const data = (btn as HTMLElement).dataset;
+        unloadLiveRadioInfo();
+        loadPlayer(data.src ?? "");
         setPlayerInfo({
-          thumbnail: data.thumbnail ?? '',
-          title: data.title ?? '',
-          dj: data.dj ?? '',
+          thumbnail: data.thumbnail ?? "",
+          title: data.title ?? "",
+          dj: data.dj ?? "",
           live: false,
-        })
-        togglePlayer(true)
-      })
-    })
+        });
+        togglePlayer(true);
+      });
+    });
   }
 
-  document.addEventListener('astro:page-load', setupButtons)
+  document.addEventListener("astro:page-load", setupButtons);
 </script>

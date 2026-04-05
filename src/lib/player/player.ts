@@ -20,6 +20,8 @@ export const loadPlayer = async (src: string) => {
   const { signal } = playerAbortController
 
   currentTimeEl.textContent = secondsToString(0)
+  scrubber.value = `0`
+  scrubber.dispatchEvent(new Event('input'))
   audio.src = src
   scrubberContainer.style.display = 'block'
   listenerEl.style.display = 'none'
