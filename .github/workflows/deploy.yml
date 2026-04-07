@@ -16,6 +16,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      AZURACAST_API_KEY: ${{ secrets.AZURACAST_API_KEY }}
     steps:
       - name: Checkout your repository using git
         uses: actions/checkout@v5

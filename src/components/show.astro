@@ -2,14 +2,14 @@
 import { Icon } from 'astro-icon/components'
 import { formatShowDate, getDjSlug } from '../utils'
 interface Props {
-  dj: string
+  djs: string[]
   title: string
   date: Date
   setlist: string
   image: string
   downloadLink: string
 }
-const { dj, title, date, setlist, image, downloadLink } = Astro.props
+const { djs, title, date, setlist, image, downloadLink } = Astro.props
 ---
 
 <style lang="scss" define:vars={{ thumbnailSize: '130px' }}>
@@ -130,7 +130,8 @@ const { dj, title, date, setlist, image, downloadLink } = Astro.props
       data-src={downloadLink}
       data-thumbnail={image}
       data-title={title}
-      data-dj={dj}><span><Icon name="play" size="30" /></span></button
+      data-dj={djs.join(' & ')}
+      ><span><Icon name="play" size="30" /></span></button
     >
 
     <img src={image} class="thumbnail" />
@@ -140,7 +141,9 @@ const { dj, title, date, setlist, image, downloadLink } = Astro.props
       <div class="show-date">{formatShowDate(date)}</div>
       <div class="title">
         <div class="show-title">{title}</div>
-        <div class="dj"><a href={`/dj/${getDjSlug(dj)}`}>{dj}</a></div>
+        <div class="dj">
+          {djs.map((dj, i) => <><a href={`/dj/${getDjSlug(dj)}`}>{dj}</a>{i < djs.length - 1 && ', '}</>)}
+        </div>
       </div>
       {
         setlist && (
@@ -161,7 +164,7 @@ const { dj, title, date, setlist, image, downloadLink } = Astro.props
         data-src={downloadLink}
         data-thumbnail={image}
         data-title={title}
-        data-dj={dj}><Icon name="play" /></button
+        data-dj={djs.join(' & ')}><Icon name="play" /></button
       >
     </div>
   </div>
