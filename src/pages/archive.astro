@@ -1,21 +1,22 @@
 ---
 import Show from '../components/show.astro'
 import MainLayout from '../layouts/main-layout.astro'
-import { shows } from '../allShows'
+import { getArchives } from '../lib/archive/getArchives'
+const archives = await getArchives()
+archives.sort((a, b) => b.date > a.date ? 1 : -1)
 ---
-
-<MainLayout title="Archive | Jetty Radio">
-    <h2 class="page-title">Archive</h2>
-    {
-        shows.map((show) => (
-            <Show
-                dj={show.dj}
-                title={show.title}
-                date={show.date}
-                setlist={show.setlist}
-                image={show.image}
-                downloadLink={show.downloadLink}
-            />
-        ))
-    }
+<MainLayout title="Archives | Jetty Radio">
+  <h2 class="page-title">Archives</h2>
+  {
+    archives.map((show: any) => (
+      <Show
+        djs={show.artists}
+        title={show.title}
+        date={show.date}
+        setlist={show.setlist}
+        image={show.art}
+        downloadLink={show.download}
+      />
+    ))
+  }
 </MainLayout>

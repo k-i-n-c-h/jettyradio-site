@@ -1,5 +1,5 @@
-// A little JavaScript weirdness to watch out for:
-// The months start on 0, so Jan = 0, Feb = 1, Mar = 2, etc..
+// This list is no longer used.
+// We're keeping it for now because some have setlists and we're trying to figure out how to store those in Azuracast
 export const shows = [
   {
     dj: "r.downstairs",
@@ -397,33 +397,6 @@ Uchar, Altai Kabai, Altai Kai`,
     setlist: ``,
     image: "https://stream.jettyradio.com/api/station/jettyradio/art/1f297a12a1d441afb131448f-1770164696.jpg",
     downloadLink: "https://stream.jettyradio.com/api/station/1/ondemand/download/1f297a12a1d441afb131448f",
-  },
-  {
-    dj: "DJ Tschona",
-    title: "dubs from the hospital bed",
-    date: new Date(2026, 0, 17),
-    setlist: `Reverb Canopy - Hospital Gown (Unreleased) 
-Celer - Slightly Apart, Almost Touching 
-Fern - Wolkental 
-Plastik - One Dimensional Cowboy 
-Psyche - How The West was Won
-Vladislav Delay - Viite 
-Pan-Sonic - Reuna-alue
-Reverb Canopy - Gratisgelbwurst feat. 4d bonk (Unreleased) 
-Sweet Reinhard - Im Mineral 
-In The Beyond - Journey 
-4d bonk - Normal Cake
-Dynamo - Delayed Death 
-Wolfgang Voigt - Rückverzauberung im Trichter 
-George Faith - Children's World (b-side)
-Klaus - Cry Tuff 
-AFX - Home Made Polysynth 
-W Moon - Dubby Plug 
-Helical Scan - Index II
-Mr. Cloudy - Hermits Lair 
-Sample From “ya no estoy aquí”`,
-    image: "https://stream.jettyradio.com/api/station/1/art/59a5d7df2e40185680247a4e-1769481295.jpg",
-    downloadLink: "https://stream.jettyradio.com/api/station/1/ondemand/download/59a5d7df2e40185680247a4e",
   },
   {
     dj: "Wyllie",

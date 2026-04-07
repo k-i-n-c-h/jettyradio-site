@@ -3,6 +3,12 @@ export const getDjSlug = (dj: string) => {
     return dj.toLowerCase().split(' ').join('-')
 }
 
+// Parses dates in the format "02/06/2026"
+export const getDateFromString = (date?: string) => {
+    if (!date) return new Date(2026, 0, 1);
+    const [month, day, year] = date.split("/").map(Number);
+    return new Date(year, month - 1, day);
+}
 export const formatShowDate = (date: Date) => date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',

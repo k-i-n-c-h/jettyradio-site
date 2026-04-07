@@ -1,29 +1,48 @@
 ---
 import Show from '../../components/show.astro'
 import MainLayout from '../../layouts/main-layout.astro'
-import { shows as allShows } from '../../allShows'
 import { getDjSlug } from '../../utils'
+import { getArchives } from '../../lib/archive/getArchives'
 
-export function getStaticPaths() {
-    const allSlugs = new Set(allShows.map(({ dj }) => getDjSlug(dj)))
-    return [...allSlugs].map((slug) => ({ params: { slug } }))
+export async function getStaticPaths() {
+    const allShows = await getArchives()
+    const artistSlugs = new Set(
+        allShows.flatMap(({ artists }) => artists.map(getDjSlug)),
+    )
+    return [...artistSlugs].map((slug) => {
+        const shows = allShows.filter((show) =>
+            show.artists.some((artist) => getDjSlug(artist) === slug),
+        )
+
+        shows.sort((a, b) => (b.date > a.date ? 1 : -1))
+        return {
+            params: {
+                slug,
+            },
+            props: {
+                shows,
+                dj: shows[0]
+                    ? shows[0].artists.find((v) => getDjSlug(v) === slug)
+                    : slug,
+            },
+        }
+    })
 }
 
-const { slug } = Astro.params
-const shows = allShows.filter((show) => getDjSlug(show.dj) === slug)
+const { shows, dj } = Astro.props
 ---
 
 <MainLayout title="Archive | Jetty Radio">
-    <h2>{shows[0] ? shows[0].dj : slug}</h2>
+    <h2 class="page-title">{dj}</h2>
     {
         shows.map((show) => (
             <Show
-                dj={show.dj}
+                djs={show.artists}
                 title={show.title}
                 date={show.date}
                 setlist={show.setlist}
-                image={show.image}
-                downloadLink={show.downloadLink}
+                image={show.art}
+                downloadLink={show.download}
             />
         ))
     }
