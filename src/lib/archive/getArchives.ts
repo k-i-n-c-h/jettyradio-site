@@ -5,10 +5,10 @@ type AzuraShow = {
   artist: string
   art: string
   unique_id: string
+  lyrics?: string
   custom_fields: {
     archive?: string
     air_date?: string
-    setlist?: string
   }
   playlists: [
     { id: number }
@@ -33,12 +33,11 @@ export const getArchives = async (): Promise<Show[]> => {
   const archiveShows = allShows.filter((show: AzuraShow) =>
     show.playlists.some((pl: any) => pl.id === 8) || show.custom_fields.archive
   ).map((show: AzuraShow): Show => {
-    console.log(show.artist.split('&').map((artist: string) => artist.trim()))
     return {
       ...show,
       artists: show.artist.split('&').map((artist: string) => artist.trim()),
       date: getDateFromString(show.custom_fields.air_date),
-      setlist: show.custom_fields.setlist ?? '',
+      setlist: show.lyrics ?? '',
       download: `https://stream.jettyradio.com/api/station/1/ondemand/download/${show.unique_id}`
     }
   })

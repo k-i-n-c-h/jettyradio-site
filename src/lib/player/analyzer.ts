@@ -10,10 +10,8 @@ export const attachAnalyzer = (audio: HTMLAudioElement) => {
   analyzer.fftSize = 512
   analyzer.maxDecibels = -10
   // analyzer.minDecibels = -110
-  console.log(analyzer.minDecibels)
   sourceNode = audioCtx.createMediaElementSource(audio)
   sourceNode.connect(analyzer)
-  console.log('attaching', sourceNode, audioCtx)
   analyzer.connect(audioCtx.destination)
 }
 

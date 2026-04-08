@@ -17,6 +17,7 @@ const { djs, title, date, setlist, image, downloadLink } = Astro.props
     display: flex;
     flex-direction: row;
     align-items: flex-start;
+    padding: 8px;
     gap: 16px;
     margin-bottom: 24px;
     font-family: sans-serif;
@@ -93,13 +94,13 @@ const { djs, title, date, setlist, image, downloadLink } = Astro.props
   }
   .setlist {
     padding-block: 8px;
-    pre {
-      font-size: 12px;
-    }
-
     summary {
       cursor: pointer;
-      font-size: 0.9em;
+      font-size: 0.8em;
+    }
+
+    pre {
+      font-size: 12px;
     }
   }
   .button-group {
@@ -142,7 +143,14 @@ const { djs, title, date, setlist, image, downloadLink } = Astro.props
       <div class="title">
         <div class="show-title">{title}</div>
         <div class="dj">
-          {djs.map((dj, i) => <><a href={`/dj/${getDjSlug(dj)}`}>{dj}</a>{i < djs.length - 1 && ', '}</>)}
+          {
+            djs.map((dj, i) => (
+              <>
+                <a href={`/dj/${getDjSlug(dj)}`}>{dj}</a>
+                {i < djs.length - 1 && ', '}
+              </>
+            ))
+          }
         </div>
       </div>
       {
