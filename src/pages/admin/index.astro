@@ -1,0 +1,350 @@
+---
+export const prerender = false;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Upload — Jetty Radio</title>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: system-ui, sans-serif;
+        background: #0a0a0a;
+        color: #e0e0e0;
+        min-height: 100vh;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 2rem 1rem;
+      }
+      .container {
+        width: 100%;
+        max-width: 640px;
+      }
+      h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 2rem;
+        color: #fff;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.375rem;
+        margin-bottom: 1.25rem;
+      }
+      label {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #888;
+      }
+      input, select, textarea {
+        background: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 6px;
+        color: #e0e0e0;
+        font-size: 0.95rem;
+        padding: 0.6rem 0.75rem;
+        width: 100%;
+        transition: border-color 0.15s;
+      }
+      input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: #555;
+      }
+      textarea { resize: vertical; min-height: 120px; }
+      select option { background: #1a1a1a; }
+      .file-drop {
+        border: 2px dashed #333;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.15s, background 0.15s;
+      }
+      .file-drop:hover, .file-drop.dragover {
+        border-color: #666;
+        background: #111;
+      }
+      .file-drop input[type="file"] { display: none; }
+      .file-drop-label { font-size: 0.9rem; color: #888; }
+      .file-drop-name { font-size: 0.875rem; margin-top: 0.5rem; color: #bbb; }
+      .progress-wrap {
+        display: none;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 1.25rem;
+      }
+      .progress-wrap.visible { display: flex; }
+      .progress-bar-bg {
+        background: #1a1a1a;
+        border-radius: 999px;
+        height: 8px;
+        overflow: hidden;
+      }
+      .progress-bar-fill {
+        background: #4ade80;
+        height: 100%;
+        width: 0%;
+        border-radius: 999px;
+        transition: width 0.2s;
+      }
+      .progress-text { font-size: 0.8rem; color: #888; }
+      button[type="submit"] {
+        background: #4ade80;
+        color: #000;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        padding: 0.7rem 1.5rem;
+        cursor: pointer;
+        width: 100%;
+        transition: background 0.15s;
+      }
+      button[type="submit"]:hover { background: #22c55e; }
+      button[type="submit"]:disabled { background: #333; color: #666; cursor: not-allowed; }
+      .feedback {
+        margin-top: 1rem;
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        display: none;
+      }
+      .feedback.success { background: #14532d; color: #bbf7d0; display: block; }
+      .feedback.error { background: #450a0a; color: #fca5a5; display: block; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Upload Show</h1>
+
+      <form id="upload-form">
+        <div class="field">
+          <label for="playlist">Playlist</label>
+          <select id="playlist" name="playlist" required>
+            <option value="">Loading playlists…</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="title">Title</label>
+          <input type="text" id="title" name="title" required />
+        </div>
+
+        <div class="field">
+          <label for="artist">Artist / DJ</label>
+          <input type="text" id="artist" name="artist" />
+        </div>
+
+        <div class="field">
+          <label for="air_date">Air Date</label>
+          <input type="date" id="air_date" name="air_date" required />
+        </div>
+
+        <div class="field">
+          <label for="setlist">Setlist</label>
+          <textarea id="setlist" name="setlist" placeholder="One track per line…"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Audio File</label>
+          <div class="file-drop" id="audio-drop">
+            <input type="file" id="audio-file" accept="audio/*" />
+            <p class="file-drop-label">Drop audio file here or click to browse</p>
+            <p class="file-drop-name" id="audio-filename"></p>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Cover Art</label>
+          <div class="file-drop" id="art-drop">
+            <input type="file" id="art-file" accept="image/*" />
+            <p class="file-drop-label">Drop image here or click to browse (optional)</p>
+            <p class="file-drop-name" id="art-filename"></p>
+          </div>
+        </div>
+
+        <div class="progress-wrap" id="progress-wrap">
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progress-bar"></div>
+          </div>
+          <p class="progress-text" id="progress-text">0%</p>
+        </div>
+
+        <button type="submit" id="submit-btn" disabled>Upload</button>
+      </form>
+
+      <div class="feedback" id="feedback"></div>
+    </div>
+
+    <script type="module">
+      // Set default air date to today
+      const airDateInput = document.getElementById('air_date');
+      airDateInput.value = new Date().toISOString().slice(0, 10);
+
+      // File drop helpers
+      function setupDrop(dropEl, inputEl, nameEl) {
+        dropEl.addEventListener('click', () => inputEl.click());
+        dropEl.addEventListener('dragover', (e) => { e.preventDefault(); dropEl.classList.add('dragover'); });
+        dropEl.addEventListener('dragleave', () => dropEl.classList.remove('dragover'));
+        dropEl.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dropEl.classList.remove('dragover');
+          const file = e.dataTransfer.files[0];
+          if (file) {
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            inputEl.files = dt.files;
+            nameEl.textContent = file.name;
+            inputEl.dispatchEvent(new Event('change'));
+          }
+        });
+        inputEl.addEventListener('change', () => {
+          if (inputEl.files[0]) nameEl.textContent = inputEl.files[0].name;
+        });
+      }
+
+      setupDrop(
+        document.getElementById('audio-drop'),
+        document.getElementById('audio-file'),
+        document.getElementById('audio-filename')
+      );
+      setupDrop(
+        document.getElementById('art-drop'),
+        document.getElementById('art-file'),
+        document.getElementById('art-filename')
+      );
+
+      // Enable submit when audio file selected
+      document.getElementById('audio-file').addEventListener('change', () => {
+        document.getElementById('submit-btn').disabled = false;
+      });
+
+      // Load playlists
+      const playlistSelect = document.getElementById('playlist');
+      let playlists = [];
+      try {
+        const res = await fetch('/api/playlists');
+        playlists = await res.json();
+        playlistSelect.innerHTML = '<option value="">Select a playlist…</option>' +
+          playlists.map(p => `<option value="${p.id}" data-name="${p.name}">${p.name}</option>`).join('');
+      } catch {
+        playlistSelect.innerHTML = '<option value="">Failed to load playlists</option>';
+      }
+
+      // Auto-fill title from playlist name
+      playlistSelect.addEventListener('change', () => {
+        const selected = playlistSelect.selectedOptions[0];
+        if (selected && selected.dataset.name) {
+          document.getElementById('title').value = selected.dataset.name;
+        }
+      });
+
+      // Upload form submit
+      document.getElementById('upload-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const audioFile = document.getElementById('audio-file').files[0];
+        if (!audioFile) return;
+
+        const submitBtn = document.getElementById('submit-btn');
+        const progressWrap = document.getElementById('progress-wrap');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+        const feedback = document.getElementById('feedback');
+
+        submitBtn.disabled = true;
+        feedback.className = 'feedback';
+        feedback.textContent = '';
+        progressWrap.classList.add('visible');
+
+        // Chunked upload using Resumable.js via CDN
+        const Resumable = (await import('https://cdn.jsdelivr.net/npm/resumablejs@1.1.0/resumable.js')).default
+          ?? (await import('https://cdn.jsdelivr.net/npm/resumablejs@1.1.0/resumable.js'));
+
+        const r = new Resumable({
+          target: '/api/upload',
+          chunkSize: 2 * 1024 * 1024, // 2 MB chunks
+          simultaneousUploads: 1,
+          testChunks: false,
+          headers: {},
+        });
+
+        r.addFile(audioFile);
+
+        r.on('progress', () => {
+          const pct = Math.round(r.progress() * 100);
+          progressBar.style.width = pct + '%';
+          progressText.textContent = pct + '%';
+        });
+
+        r.on('error', (msg) => {
+          feedback.className = 'feedback error';
+          feedback.textContent = 'Upload failed: ' + msg;
+          submitBtn.disabled = false;
+        });
+
+        r.on('complete', async () => {
+          progressText.textContent = 'Finalizing…';
+
+          // Get unique_id from last chunk response (stored in r.files[0])
+          const unique_id = r.files[0]?.uniqueIdentifier;
+
+          // Read cover art as base64 if provided
+          let cover_art = null;
+          const artFile = document.getElementById('art-file').files[0];
+          if (artFile) {
+            cover_art = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.readAsDataURL(artFile);
+            });
+          }
+
+          const payload = {
+            unique_id,
+            title: document.getElementById('title').value,
+            artist: document.getElementById('artist').value,
+            setlist: document.getElementById('setlist').value,
+            air_date: document.getElementById('air_date').value,
+            playlist_id: document.getElementById('playlist').value || null,
+            cover_art,
+          };
+
+          try {
+            const res = await fetch('/api/finalize-upload', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+            if (res.ok) {
+              feedback.className = 'feedback success';
+              feedback.textContent = 'Upload complete! The file is now in AzuraCast.';
+              document.getElementById('upload-form').reset();
+              airDateInput.value = new Date().toISOString().slice(0, 10);
+              document.getElementById('audio-filename').textContent = '';
+              document.getElementById('art-filename').textContent = '';
+              progressWrap.classList.remove('visible');
+            } else {
+              const err = await res.json();
+              feedback.className = 'feedback error';
+              feedback.textContent = 'Finalize failed: ' + (err.error ?? res.statusText);
+              submitBtn.disabled = false;
+            }
+          } catch (err) {
+            feedback.className = 'feedback error';
+            feedback.textContent = 'Network error: ' + err.message;
+            submitBtn.disabled = false;
+          }
+        });
+
+        r.upload();
+      });
+    </script>
+  </body>
+</html>
