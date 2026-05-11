@@ -1,0 +1,386 @@
+---
+import MainLayout from '../../layouts/main-layout.astro'
+---
+
+<style>
+  #clerk-auth {
+    display: flex;
+    justify-content: center;
+    padding: 2rem 0;
+  }
+
+  #admin-content {
+    display: none;
+  }
+
+  .admin-form {
+    font-family: sans-serif;
+  }
+  .admin-form .field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    margin-bottom: 1.25rem;
+  }
+  .admin-form label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #888;
+  }
+  .admin-form input, .admin-form select, .admin-form textarea {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 6px;
+    color: #e0e0e0;
+    font-size: 0.95rem;
+    padding: 0.6rem 0.75rem;
+    width: 100%;
+    transition: border-color 0.15s;
+  }
+  .admin-form input:focus, .admin-form select:focus, .admin-form textarea:focus {
+    outline: none;
+    border-color: #555;
+  }
+  .admin-form textarea { resize: vertical; min-height: 120px; }
+  .admin-form select option { background: #1a1a1a; }
+  .admin-form .file-drop {
+    border: 2px dashed #333;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .admin-form .file-drop:hover, .admin-form .file-drop.dragover {
+    border-color: #666;
+    background: #fff1;
+  }
+  .admin-form .file-drop input[type="file"] { display: none; }
+  .admin-form .file-drop-label { font-size: 0.9rem; color: #888; }
+  .admin-form .file-drop-name { font-size: 0.875rem; margin-top: 0.5rem; color: #bbb; }
+  .admin-form .progress-wrap {
+    display: none;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .admin-form .progress-wrap.visible { display: flex; }
+  .admin-form .progress-bar-bg {
+    background: #1a1a1a;
+    border-radius: 999px;
+    height: 8px;
+    overflow: hidden;
+  }
+  .admin-form .progress-bar-fill {
+    background: #4ade80;
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    transition: width 0.2s;
+  }
+  .admin-form .progress-text { font-size: 0.8rem; color: #888; }
+  .admin-form button[type="submit"] {
+    background: #4ade80;
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 0.7rem 1.5rem;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.15s;
+  }
+  .admin-form button[type="submit"]:hover { background: #22c55e; }
+  .admin-form button[type="submit"]:disabled { background: #333; color: #666; cursor: not-allowed; }
+  .admin-form .feedback {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    display: none;
+  }
+  .admin-form .feedback.success { background: #14532d; color: #bbf7d0; display: block; }
+  .admin-form .feedback.error { background: #450a0a; color: #fca5a5; display: block; }
+
+  .sign-out-wrap {
+    text-align: right;
+    margin-bottom: 1rem;
+  }
+  .sign-out-wrap button {
+    background: none;
+    border: 1px solid #555;
+    border-radius: 6px;
+    color: #aaa;
+    padding: 0.4rem 0.8rem;
+    cursor: pointer;
+    font-size: 0.8rem;
+  }
+  .sign-out-wrap button:hover { border-color: #888; color: #ccc; }
+</style>
+
+<MainLayout title="Admin — Jetty Radio">
+  <div id="clerk-auth">
+    <!-- Clerk will mount sign-in UI here when not authenticated -->
+  </div>
+
+  <div id="admin-content">
+    <div class="sign-out-wrap">
+      <button id="sign-out-btn">Sign out</button>
+    </div>
+
+    <div class="admin-form">
+      <h2 class="page-title">Upload Show</h2>
+
+      <form id="upload-form">
+        <div class="field">
+          <label for="playlist">Playlist</label>
+          <select id="playlist" name="playlist" required>
+            <option value="">Loading playlists…</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="title">Title</label>
+          <input type="text" id="title" name="title" required />
+        </div>
+
+        <div class="field">
+          <label for="artist">Artist / DJ</label>
+          <input type="text" id="artist" name="artist" />
+        </div>
+
+        <div class="field">
+          <label for="air_date">Air Date</label>
+          <input type="date" id="air_date" name="air_date" required />
+        </div>
+
+        <div class="field">
+          <label for="setlist">Setlist</label>
+          <textarea id="setlist" name="setlist" placeholder="One track per line…"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Audio File</label>
+          <div class="file-drop" id="audio-drop">
+            <input type="file" id="audio-file" accept="audio/*" />
+            <p class="file-drop-label">Drop audio file here or click to browse</p>
+            <p class="file-drop-name" id="audio-filename"></p>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Cover Art</label>
+          <div class="file-drop" id="art-drop">
+            <input type="file" id="art-file" accept="image/*" />
+            <p class="file-drop-label">Drop image here or click to browse (optional)</p>
+            <p class="file-drop-name" id="art-filename"></p>
+          </div>
+        </div>
+
+        <div class="progress-wrap" id="progress-wrap">
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progress-bar"></div>
+          </div>
+          <p class="progress-text" id="progress-text">0%</p>
+        </div>
+
+        <button type="submit" id="submit-btn" disabled>Upload</button>
+      </form>
+
+      <div class="feedback" id="feedback"></div>
+    </div>
+  </div>
+
+  <script>
+    import { getClerk } from '../../lib/clerk'
+
+    const clerk = await getClerk()
+    const authEl = document.getElementById('clerk-auth')!
+    const contentEl = document.getElementById('admin-content')!
+
+    function updateView() {
+      if (clerk.user) {
+        authEl.style.display = 'none'
+        contentEl.style.display = 'block'
+        initAdminForm()
+      } else {
+        contentEl.style.display = 'none'
+        authEl.style.display = 'flex'
+        clerk.mountSignIn(authEl)
+      }
+    }
+
+    clerk.addListener(updateView)
+    updateView()
+
+    document.getElementById('sign-out-btn')?.addEventListener('click', () => {
+      clerk.signOut()
+    })
+
+    // ---- Admin form logic (runs once) ----
+    const API_BASE = import.meta.env.PUBLIC_API_BASE_URL
+
+    async function authFetch(path: string, options: RequestInit = {}): Promise<Response> {
+      const token = await clerk.session?.getToken()
+      if (!token) throw new Error('Not authenticated')
+      return fetch(`${API_BASE}${path}`, {
+        ...options,
+        headers: {
+          ...options.headers as Record<string, string>,
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+    }
+
+    let formInitialized = false
+    function initAdminForm() {
+      if (formInitialized) return
+      formInitialized = true
+
+      const airDateInput = document.getElementById('air_date') as HTMLInputElement
+      airDateInput.value = new Date().toISOString().slice(0, 10)
+
+      function setupDrop(dropEl: HTMLElement, inputEl: HTMLInputElement, nameEl: HTMLElement) {
+        dropEl.addEventListener('click', () => inputEl.click())
+        dropEl.addEventListener('dragover', (e) => { e.preventDefault(); dropEl.classList.add('dragover') })
+        dropEl.addEventListener('dragleave', () => dropEl.classList.remove('dragover'))
+        dropEl.addEventListener('drop', (e) => {
+          e.preventDefault()
+          dropEl.classList.remove('dragover')
+          const file = e.dataTransfer?.files[0]
+          if (file) {
+            const dt = new DataTransfer()
+            dt.items.add(file)
+            inputEl.files = dt.files
+            nameEl.textContent = file.name
+            inputEl.dispatchEvent(new Event('change'))
+          }
+        })
+        inputEl.addEventListener('change', () => {
+          if (inputEl.files?.[0]) nameEl.textContent = inputEl.files[0].name
+        })
+      }
+
+      setupDrop(
+        document.getElementById('audio-drop')!,
+        document.getElementById('audio-file') as HTMLInputElement,
+        document.getElementById('audio-filename')!
+      )
+      setupDrop(
+        document.getElementById('art-drop')!,
+        document.getElementById('art-file') as HTMLInputElement,
+        document.getElementById('art-filename')!
+      )
+
+      document.getElementById('audio-file')!.addEventListener('change', () => {
+        (document.getElementById('submit-btn') as HTMLButtonElement).disabled = false
+      })
+
+      // Load playlists from worker proxy
+      const playlistSelect = document.getElementById('playlist') as HTMLSelectElement
+      authFetch('/api/playlists')
+        .then(r => r.json())
+        .then((playlists: any[]) => {
+          playlistSelect.innerHTML = '<option value="">Select a playlist…</option>'
+          for (const p of playlists) {
+            const opt = document.createElement('option')
+            opt.value = p.id
+            opt.textContent = p.name
+            playlistSelect.appendChild(opt)
+          }
+        })
+        .catch(() => {
+          playlistSelect.innerHTML = '<option value="">Failed to load playlists</option>'
+        })
+
+      // Form submission — upload audio then finalize metadata
+      document.getElementById('upload-form')!.addEventListener('submit', async (e) => {
+        e.preventDefault()
+        const feedback = document.getElementById('feedback')!
+        const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement
+        const progressWrap = document.getElementById('progress-wrap')!
+        const progressBar = document.getElementById('progress-bar')!
+        const progressText = document.getElementById('progress-text')!
+
+        feedback.className = 'feedback'
+        submitBtn.disabled = true
+        progressWrap.classList.add('visible')
+        progressBar.style.width = '0%'
+        progressText.textContent = 'Uploading audio…'
+
+        try {
+          const audioFile = (document.getElementById('audio-file') as HTMLInputElement).files?.[0]
+          if (!audioFile) throw new Error('No audio file selected')
+
+          // Step 1: Upload audio file
+          progressBar.style.width = '20%'
+          const uploadForm = new FormData()
+          uploadForm.append('file', audioFile)
+
+          const uploadRes = await authFetch('/api/upload', {
+            method: 'POST',
+            body: uploadForm,
+          })
+
+          if (!uploadRes.ok) {
+            const err = await uploadRes.json().catch(() => ({}))
+            throw new Error(err.error || `Upload failed (${uploadRes.status})`)
+          }
+
+          const uploadData = await uploadRes.json()
+          const fileId = uploadData.id ?? uploadData.unique_id
+          progressBar.style.width = '60%'
+          progressText.textContent = 'Saving metadata…'
+
+          // Step 2: Read cover art as base64 (if provided)
+          let coverArtBase64: string | undefined
+          const artFile = (document.getElementById('art-file') as HTMLInputElement).files?.[0]
+          if (artFile) {
+            coverArtBase64 = await new Promise<string>((resolve) => {
+              const reader = new FileReader()
+              reader.onload = () => resolve(reader.result as string)
+              reader.readAsDataURL(artFile)
+            })
+          }
+
+          // Step 3: Finalize — update metadata, assign playlist, upload art
+          const finalizeRes = await authFetch('/api/finalize-upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              file_id: fileId,
+              title: (document.getElementById('title') as HTMLInputElement).value,
+              artist: (document.getElementById('artist') as HTMLInputElement).value,
+              playlist_id: Number((document.getElementById('playlist') as HTMLSelectElement).value),
+              air_date: (document.getElementById('air_date') as HTMLInputElement).value,
+              setlist: (document.getElementById('setlist') as HTMLTextAreaElement).value,
+              cover_art: coverArtBase64,
+            }),
+          })
+
+          if (!finalizeRes.ok) {
+            const err = await finalizeRes.json().catch(() => ({}))
+            throw new Error(err.error || `Finalize failed (${finalizeRes.status})`)
+          }
+
+          progressBar.style.width = '100%'
+          progressText.textContent = 'Done!'
+          feedback.className = 'feedback success'
+          feedback.textContent = 'Show uploaded successfully!'
+          ;(document.getElementById('upload-form') as HTMLFormElement).reset()
+          airDateInput.value = new Date().toISOString().slice(0, 10)
+          document.getElementById('audio-filename')!.textContent = ''
+          document.getElementById('art-filename')!.textContent = ''
+        } catch (err: any) {
+          feedback.className = 'feedback error'
+          feedback.textContent = err.message || 'Upload failed'
+        } finally {
+          submitBtn.disabled = false
+          setTimeout(() => progressWrap.classList.remove('visible'), 3000)
+        }
+      })
+    }
+  </script>
+</MainLayout>

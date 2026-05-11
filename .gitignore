@@ -2,6 +2,11 @@
 node_modules
 .astro
 
+# Cloudflare Worker
+worker/node_modules
+worker/.dev.vars
+worker/.wrangler
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
