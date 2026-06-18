@@ -2,7 +2,7 @@
 import Show from '../../components/show.astro'
 import MainLayout from '../../layouts/main-layout.astro'
 import { getDjSlug } from '../../utils'
-import { getArchives } from '../../lib/archive/getArchives'
+import { getArchives } from '../../lib/azuracast/get-archives'
 
 export async function getStaticPaths() {
     const allShows = await getArchives()

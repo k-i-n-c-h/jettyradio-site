@@ -1,3 +1,5 @@
+import { format } from 'date-fns';
+
 export const getDjSlug = (dj: string) => {
     if (dj.length <= 0) return 'other'
     return dj.toLowerCase().split(' ').join('-')
@@ -25,3 +27,8 @@ export const secondsToString = (seconds: number) => {
     const s = `${displaySeconds < 10 ? '0' : ''}${displaySeconds}`
     return `${h}${m}${s}`
 }
+
+export const formatDate = (d: Date) => format(d, 'MMMM do, yyyy')
+export const formatTime = (d: Date) => format(d, 'h:mmaaa').toLowerCase()
+export const formatTimeRange = (start: Date, end: Date) => `${formatTime(start)}-${formatTime(end)}`
+export const formatDateRange = (start: Date, end: Date) => `${formatTimeRange(start, end)}, ${formatDate(start)}`

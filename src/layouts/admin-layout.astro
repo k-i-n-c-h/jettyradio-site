@@ -1,0 +1,15 @@
+---
+import MainLayout from './main-layout.astro'
+import { Show, SignInButton, UserButton } from '@clerk/astro/components'
+import RootLayout from './root-layout.astro'
+---
+
+<RootLayout title="Jetty Admin">
+    <Show when="signed-in">
+        <UserButton />
+        <slot />
+    </Show>
+    <Show when="signed-out">
+        <SignInButton mode="modal" />
+    </Show>
+</RootLayout>
