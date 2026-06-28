@@ -2,6 +2,8 @@
   "name": "jetty-radio",
   "version": "0.0.1",
   "dependencies": {
+    "@astrojs/netlify": "^7.0.8",
+    "@clerk/astro": "^3.0.21",
     "astro": "^6.1.3",
     "astro-icon": "^1.1.5",
     "sass-embedded": "^1.99.0"
@@ -15,5 +17,8 @@
     "preview": "astro preview",
     "astro": "astro"
   },
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "netlify-cli": "^26.0.0"
+  }
 }

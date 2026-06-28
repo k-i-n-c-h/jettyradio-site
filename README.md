@@ -77,12 +77,19 @@ Assets like our favicons, the background image, etc... live here. They'll always
 
 ### Making changes
 To make/test changes locally you need to
-1. clone the github repository
-2. intall [Bun](https://bun.com/) (easy instructions on their site)
-3. run `bun run dev` in your terminal while you're in the project folder
-4. go to the link it tells you. The site is running on your computer and any change you make to the code will be reflected here. 
+1. Clone the github repository
+2. Install dependencies: `npm install`
+3. Copy `.env.example` to `.env` and fill in the values:
+   - `AZURACAST_API_KEY` — AzuraCast station API key
+   - `PUBLIC_CLERK_PUBLISHABLE_KEY` — from your [Clerk](https://clerk.com/) app
+   - `CLERK_SECRET_KEY` — from your Clerk app
+4. Run the dev server: `npx netlify dev`
+5. Go to `http://localhost:8888` — the site is running on your computer and any change you make to the code will be reflected here.
 
-Don't want to bother with installing `bun` and `git` and pulling off righteous hacks in your terminal?
+> [!NOTE]
+> We use [Netlify CLI](https://docs.netlify.com/cli/get-started/) to run the dev server because the admin page and API endpoints need serverless functions. Plain `npm run dev` will work for static pages but won't support the `/admin` or `/api` routes.
+
+Don't want to bother with installing stuff and pulling off righteous hacks in your terminal?
 Forget aboout iiiit! I added a `.devcontainer` file here so we can use Github's Codespaces feature, which spins up a whole dev environment in your browser without you doing anything! I'll make a video showing how to do this later, but if you're interested before I get that up, let me know and I can walk you though it!
 > [!WARNING]
-> **Important note:** Everyone gets 60 free hours of Codespace usage per month. That's more than enough for what we'll be doing, but it's important to remember to "stop" your codespace when you're done using it, because otherwise it stays on even after you've closed your browser. 
+> **Important note:** Everyone gets 60 free hours of Codespace usage per month. That's more than enough for what we'll be doing, but it's important to remember to "stop" your codespace when you're done using it, because otherwise it stays on even after you've closed your browser.

@@ -29,7 +29,8 @@ export const getArchives = async (): Promise<Show[]> => {
       'X-API-Key': import.meta.env.AZURACAST_API_KEY,
     },
   })
-  const allShows = await res.json()
+  const data = await res.json()
+  const allShows: AzuraShow[] = Array.isArray(data) ? data : data.rows ?? []
   const archiveShows = allShows.filter((show: AzuraShow) =>
     show.playlists.some((pl: any) => pl.id === 8) || show.custom_fields.archive
   ).map((show: AzuraShow): Show => {
