@@ -1,10 +1,11 @@
 ---
 import Show from '../components/show.astro'
 import MainLayout from '../layouts/main-layout.astro'
-import { getArchives } from '../lib/archive/getArchives'
+import { getArchives } from '../lib/azuracast/get-archives'
 const archives = await getArchives()
-archives.sort((a, b) => b.date > a.date ? 1 : -1)
+archives.sort((a, b) => (b.date > a.date ? 1 : -1))
 ---
+
 <MainLayout title="Archives | Jetty Radio">
   <h2 class="page-title">Archives</h2>
   {

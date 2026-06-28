@@ -1,0 +1,41 @@
+---
+import AdminLayout from '../../layouts/admin-layout.astro'
+---
+
+<AdminLayout>
+    <div class="hero mt-4">
+        <div class="hero-content text-center">
+            <div class="max-w-md">
+                <h1 class="text-5xl font-bold">Jetty Backstage</h1>
+                <div class="py-6">
+                    There's not much here yet besides a link to our <a
+                        class="link"
+                        href="/backstage/upload-show">Upload Show</a
+                    > page, but with a little love we can have:
+                    <ul
+                        class="list-disc text-left marker:text-accent marker:text-3xl"
+                    >
+                        <li>
+                            A table of upcoming shows based off our calendar (Upload form could have everything filled out except audio, art, and setlist)
+                        </li>
+                        <li>
+                            A limited experience for residents to upload only
+                            their show
+                        </li>
+                        <li>Links to resources, docs, examples for residents</li>
+                        <li>
+                            A way to create playlists as well (it's easy to miss
+                            some settings when doing it manually)
+                        </li>
+                        <li>All your other ideas</li>
+                    </ul>
+                </div>
+                <a
+                    role="button"
+                    class="btn btn-accent"
+                    href="/backstage/upload-show">Upload Show</a
+                >
+            </div>
+        </div>
+    </div>
+</AdminLayout>

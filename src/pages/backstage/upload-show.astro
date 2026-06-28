@@ -1,0 +1,371 @@
+---
+import AdminLayout from '../../layouts/admin-layout.astro'
+import { getPlaylists } from '../../lib/azuracast/get-playlists'
+const playlists = await getPlaylists()
+---
+
+<style>
+    @import 'tailwindcss';
+    .note {
+        @apply text-gray-400 my-2 block;
+    }
+</style>
+
+<AdminLayout>
+    <div class="flex flex-col items-center my-8">
+        <form id="upload-form" class="flex flex-col gap-4 w-80">
+            <label class="floating-label">
+                <span>Playlist</span>
+                <select name="playlist" id="playlist" class="select" required>
+                    <option selected disabled hidden>Select a playlist</option>
+                    {
+                        playlists.map((playlist) => (
+                            <option value={playlist.id}>{playlist.name}</option>
+                        ))
+                    }
+                </select>
+                <small id="playlist-note" class="note"></small>
+            </label>
+
+            <label class="floating-label">
+                <span>Show title</span>
+                <input
+                    type="text"
+                    name="title"
+                    id="title"
+                    placeholder="Show title"
+                    class="input"
+                    required
+                />
+                <small id="title-note" class="note"></small>
+            </label>
+
+            <label class="floating-label">
+                <span>Artist</span>
+                <input
+                    type="text"
+                    name="artist"
+                    id="artist"
+                    placeholder="Artist"
+                    class="input"
+                    required
+                />
+                <small id="artist-note" class="note"
+                    >For multiple artists, please separate names with "&".<br /> Example:
+                    Tia & Tamara</small
+                >
+            </label>
+
+            <label class="floating-label">
+                <span>Air date</span>
+                <input type="date" name="airDate" id="air-date" class="input" />
+            </label>
+            <label class="floating-label">
+                <span>Start time</span>
+                <input
+                    type="time"
+                    name="startTime"
+                    id="start-time"
+                    class="input"
+                    value=""
+                    required
+                />
+            </label>
+            <label class="floating-label">
+                <span>End time</span>
+                <input
+                    type="time"
+                    name="endTime"
+                    id="end-time"
+                    class="input"
+                    required
+                />
+            </label>
+            <label class="floating-label">
+                <span>Setlist</span>
+                <textarea
+                    name="setlist"
+                    id="setlist"
+                    class="textarea h-50"
+                    placeholder="Setlist"></textarea>
+                <small id="setlist-note" class="note"
+                    >Please use standard catalogue format. <br />Example: Artist
+                    Name - Track Title</small
+                >
+            </label>
+            <label class="label">
+                <input
+                    type="checkbox"
+                    checked="checked"
+                    class="checkbox"
+                    name="archive"
+                />
+                Archive after airing?
+            </label>
+            <div class="flex flex-col">
+                <label for="audio-file" class="btn btn-primary"
+                    >Choose Show Audio</label
+                >
+                <input
+                    type="file"
+                    id="audio-file"
+                    class="hidden"
+                    accept="audio/mpeg"
+                />
+                <small id="audio-note" class="note"
+                    >No show audio selected</small
+                >
+            </div>
+            <div class="flex flex-col">
+                <label for="art-file" class="btn btn-secondary"
+                    >Choose Show Art</label
+                >
+                <input
+                    type="file"
+                    name="art"
+                    id="art-file"
+                    class="hidden"
+                    accept="image/gif, image/jpeg, image/png"
+                />
+                <small id="art-note" class="note">No show art selected</small>
+                <img id="art-preview" alt="Show art" hidden />
+            </div>
+            <button class="btn btn-accent" type="submit">Upload</button>
+            <progress
+                id="progress"
+                value="0"
+                max="100"
+                hidden
+                class="progress progress-accent"></progress>
+        </form>
+        <p id="status"></p>
+    </div>
+    <script>
+        import Flow from '@flowjs/flow.js'
+        import {
+            reformatDateInput,
+            getInputValueFromAzuraScheduleTime,
+        } from '../../utils'
+        import {
+            updateFile,
+            updateArt,
+            moveFileToArchive,
+            schedulePlaylist,
+        } from '../../lib/azuracast/api'
+        import {
+            getAllShows,
+            getMostRecentFile,
+            mostRecentFromFiles,
+        } from '../../lib/azuracast/get-files'
+        import { showInPlaylist } from '../../lib/azuracast/get-archives'
+        import { getPlaylists } from '../../lib/azuracast/get-playlists'
+        const stationId = 1
+
+        const uploadForm = document.getElementById(
+            'upload-form',
+        ) as HTMLFormElement
+
+        const playlistInput = document.getElementById(
+            'playlist',
+        ) as HTMLSelectElement
+        const titleInput = document.getElementById('title') as HTMLInputElement
+        const artistInput = document.getElementById(
+            'artist',
+        ) as HTMLInputElement
+        const startTimeInput = document.getElementById(
+            'start-time',
+        ) as HTMLInputElement
+        const endTimeInput = document.getElementById(
+            'end-time',
+        ) as HTMLInputElement
+
+        const artFileInput = document.getElementById(
+            'art-file',
+        ) as HTMLInputElement
+        const audioFileInput = document.getElementById(
+            'audio-file',
+        ) as HTMLInputElement
+
+        const playlistNote = document.getElementById(
+            'playlist-note',
+        ) as HTMLElement
+        const titleNote = document.getElementById('title-note') as HTMLElement
+        const artNote = document.getElementById('art-note') as HTMLElement
+        const artPreview = document.getElementById(
+            'art-preview',
+        ) as HTMLImageElement
+        const audioNote = document.getElementById('audio-note') as HTMLElement
+
+        const progress = document.getElementById(
+            'progress',
+        ) as HTMLProgressElement
+        const status = document.getElementById('status') as HTMLElement
+
+        artFileInput?.addEventListener('change', (e) => {
+            if (!(e.target instanceof HTMLInputElement)) return
+
+            const file = e.target?.files?.[0]
+            if (!file) return
+
+            const url = URL.createObjectURL(file)
+            artPreview.src = url
+            artPreview.hidden = false
+            artNote.textContent = `Image selected: ${file.name}`
+        })
+
+        window.addEventListener('load', async () => {
+            await window.Clerk.load()
+            const apiKey = window.Clerk.user?.publicMetadata.azuracastApiKey as
+                | string
+                | undefined
+
+            if (!apiKey) {
+                alert(
+                    `Sorry, there's an issue with your profile's configuration. Please contact a Jetty Radio organizer to sort it out!`,
+                )
+                return
+            }
+            const allShowFiles = await getAllShows(apiKey)
+            const allPlaylists = await getPlaylists(apiKey)
+
+            playlistInput?.addEventListener('change', (e) => {
+                let value = -1
+                if (e.target instanceof HTMLSelectElement) {
+                    value = parseInt(e.target.value)
+                }
+                const selectedPlaylist = allPlaylists.find(
+                    ({ id }) => id === value,
+                )
+                if (!selectedPlaylist) return
+
+                const showsInPlaylist = allShowFiles.filter((show) =>
+                    showInPlaylist(show, selectedPlaylist.id),
+                )
+                const mostRecentInPlaylist =
+                    mostRecentFromFiles(showsInPlaylist)
+
+                if (mostRecentInPlaylist) {
+                    titleInput.value = mostRecentInPlaylist.title
+                    titleNote.textContent = `Most recent file in playlist titled "${mostRecentInPlaylist.title}"`
+                    artistInput.value = mostRecentInPlaylist.artist
+                } else {
+                    titleInput.value = ''
+                    artistInput.value = ''
+                    titleNote.textContent = ''
+                }
+
+                const existingSchedule = selectedPlaylist.schedule_items[0]
+                if (existingSchedule) {
+                    startTimeInput.value = getInputValueFromAzuraScheduleTime(
+                        existingSchedule.start_time,
+                    )
+                    endTimeInput.value = getInputValueFromAzuraScheduleTime(
+                        existingSchedule.end_time,
+                    )
+                }
+            })
+
+            const flow = new Flow({
+                target: `https://stream.jettyradio.com/api/station/${stationId}/files/upload`,
+                headers: { 'X-API-Key': apiKey },
+                chunkSize: 1 * 1024 * 1024,
+                simultaneousUploads: 1,
+                testChunks: false,
+                permanentErrors: [400, 404, 415, 500, 501],
+                singleFile: true,
+                query: {
+                    currentDirectory: '', // root of media library
+                },
+            })
+
+            flow.assignBrowse(audioFileInput ? [audioFileInput] : [])
+
+            flow.on('fileAdded', async (file) => {
+                audioNote.textContent = `Audio selected: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`
+            })
+
+            flow.on('fileProgress', (file) => {
+                const pct = Math.round(file.progress() * 100)
+                progress.hidden = false
+                progress.value = pct
+                status.textContent = `Uploading… ${pct}%`
+            })
+
+            flow.on('fileSuccess', async () => {
+                status.textContent =
+                    'Show upload success, now editing show data'
+                const file = await getMostRecentFile(apiKey)
+                if (!file) {
+                    console.error('Could not find most recent file.')
+                    return
+                }
+                const fileConfirmed = window.confirm(
+                    `Most recent file is ${file.text}, is this correct?`,
+                )
+                if (!fileConfirmed) return
+
+                const formData = new FormData(uploadForm)
+                formData.get('archive')?.toString()
+                const playlistId = Number(
+                    formData.get('playlist')?.toString() ?? '',
+                )
+                const airDate = formData.get('airDate')?.toString()!
+                const startTime = formData.get('startTime')?.toString()!
+                const endTime = formData.get('endTime')?.toString()!
+                await updateFile(apiKey, file.id, {
+                    title: formData.get('title')?.toString() ?? '',
+                    artist: formData.get('artist')?.toString() ?? '',
+                    setlist: formData.get('setlist')?.toString() ?? '',
+                    airDate: reformatDateInput(airDate),
+                    archive: Boolean(formData.get('archive')?.toString()),
+                    playlistId,
+                })
+                status.textContent = 'Show edited, now updating show art'
+                const artFormData = new FormData()
+                const data = formData.get('art') as File
+                artFormData.append('file', data)
+                console.info('Adding show art to file')
+                await updateArt(apiKey, file.id, artFormData)
+                status.textContent =
+                    'Show art updated, now old playlist shows to archive'
+
+                // Remove other files from playlist (move to archive instead)
+                // Maybe check we're not removing the new show? These files are from before adding it so it should be okay, but still
+                const oldPlaylistShows = allShowFiles.filter((show) =>
+                    showInPlaylist(show, playlistId),
+                )
+
+                for (const show of oldPlaylistShows) {
+                    console.info(`Moved show ${show.title} to archive`)
+                    await moveFileToArchive(apiKey, show.id)
+                }
+                status.textContent =
+                    'Old shows moved to archive, now scheduling playlist'
+
+                console.info(`Scheduling playlist ${playlistId}`)
+                await schedulePlaylist(
+                    apiKey,
+                    playlistId,
+                    airDate,
+                    parseInt(startTime.replace(':', '')),
+                    parseInt(endTime.replace(':', '')),
+                )
+                status.textContent =
+                    'Playlist has been scheduled. Show upload complete 💃'
+            })
+
+            flow.on('fileError', (file, message) => {
+                status.textContent = `Upload failed: ${message}`
+            })
+
+            uploadForm?.addEventListener('submit', (e) => {
+                e.preventDefault()
+                if (flow.files.length === 0) {
+                    status.textContent = 'Please select a file first.'
+                    return
+                }
+                flow.upload()
+            })
+        })
+    </script>
+</AdminLayout>
