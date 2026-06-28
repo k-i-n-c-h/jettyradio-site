@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { pad } from 'es-toolkit';
 
 export const getDjSlug = (dj: string) => {
     if (dj.length <= 0) return 'other'
@@ -32,3 +33,20 @@ export const formatDate = (d: Date) => format(d, 'MMMM do, yyyy')
 export const formatTime = (d: Date) => format(d, 'h:mmaaa').toLowerCase()
 export const formatTimeRange = (start: Date, end: Date) => `${formatTime(start)}-${formatTime(end)}`
 export const formatDateRange = (start: Date, end: Date) => `${formatTimeRange(start, end)}, ${formatDate(start)}`
+
+export const reformatDateInput = (dateStr: string) => {
+    const [year, month, day] = dateStr.split("-");
+    return `${month}/${day}/${year}`;
+}
+
+const leftPad = (str: string, length: number, char: string) => {
+    while (str.length < length) {
+        str = char + str
+    }
+    return str
+}
+
+export const getInputValueFromAzuraScheduleTime = (time: number) => {
+    const str = leftPad(String(time), 4, '0')
+    return `${str[0]}${str[1]}:${str[2]}${str[3]}`
+}

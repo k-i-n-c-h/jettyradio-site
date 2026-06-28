@@ -1,16 +1,34 @@
 export interface AzuraShow {
-    title: string
-    artist: string
-    art: string
+    id: number
     unique_id: string
-    lyrics?: string
+    song_id: string
+    art: string
+    path: string
+    mtime: number
+    uploaded_at: number
+    art_updated_at: number
+    length: number
+    length_text: string
     custom_fields: {
-        archive?: string
         air_date?: string
+        archive?: string
     }
-    playlists: [
-        { id: number }
-    ]
+    playlists: ShowPlaylist[]
+    text: string
+    artist: string
+    title: string
+    album: string
+    genre: any
+    isrc: any
+    lyrics?: string
+}
+
+export interface ShowPlaylist {
+    id: number
+    name: string
+    short_name: string
+    folder: any
+    count: number
 }
 
 export interface Show extends AzuraShow {
@@ -48,9 +66,9 @@ export interface AzuraPlaylist {
     short_name: string
     num_songs: number
     total_length: number
-  }
-  
-  export interface ScheduleItem {
+}
+
+export interface ScheduleItem {
     start_time: number
     end_time: number
     start_date: any
@@ -58,4 +76,4 @@ export interface AzuraPlaylist {
     days: number[]
     loop_once: boolean
     id: number
-  }
+}

@@ -38,6 +38,7 @@ const { djs, title, date, setlist, image, downloadLink } = Astro.props
   .thumbnail-container {
     position: relative;
     height: var(--thumbnailSize);
+    flex-shrink: 0;
   }
   .transport-button {
     position: absolute;
@@ -90,6 +91,7 @@ const { djs, title, date, setlist, image, downloadLink } = Astro.props
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+    line-height: 1.25;
     gap: 2px;
   }
   .setlist {
@@ -146,7 +148,9 @@ const { djs, title, date, setlist, image, downloadLink } = Astro.props
           {
             djs.map((dj, i) => (
               <>
-                <a href={`/dj/${getDjSlug(dj)}`}>{dj}</a>
+                <a class="link" href={`/dj/${getDjSlug(dj)}`}>
+                  {dj}
+                </a>
                 {i < djs.length - 1 && ', '}
               </>
             ))

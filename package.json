@@ -4,11 +4,14 @@
   "dependencies": {
     "@clerk/astro": "^3.3.2",
     "@flowjs/flow.js": "^2.14.1",
+    "@tailwindcss/vite": "^4.3.1",
     "astro": "6.4.2",
     "astro-icon": "^1.1.5",
+    "daisyui": "^5.5.23",
     "date-fns": "^4.4.0",
     "es-toolkit": "^1.47.0",
-    "sass-embedded": "^1.99.0"
+    "sass-embedded": "^1.99.0",
+    "tailwindcss": "^4.3.1"
   },
   "engines": {
     "node": ">=22.12.0"

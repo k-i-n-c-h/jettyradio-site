@@ -1,15 +1,36 @@
 ---
-import MainLayout from './main-layout.astro'
-import { Show, SignInButton, UserButton } from '@clerk/astro/components'
 import RootLayout from './root-layout.astro'
+import { Show, SignInButton, UserButton } from '@clerk/astro/components'
 ---
 
 <RootLayout title="Jetty Admin">
     <Show when="signed-in">
-        <UserButton />
+        <div class="navbar bg-base-100 px-8 w-full">
+            <div class="flex-1">
+                <a class="btn btn-ghost" href="/backstage">Jetty Backstage</a>
+            </div>
+            <div class="flex-none px-8">
+                <ul class="menu menu-horizontal px-1">
+                    <li><a href="/backstage/upload-show">Upload Show</a></li>
+                    <li><a href="/">Jetty Radio</a></li>
+                </ul>
+            </div>
+            <UserButton />
+        </div>
         <slot />
     </Show>
     <Show when="signed-out">
-        <SignInButton mode="modal" />
+        <div class="hero min-h-screen">
+            <div class="hero-content text-center">
+                <div class="max-w-md">
+                    <h1 class="text-5xl font-bold">Jetty Backstage</h1>
+                    <p class="py-6">
+                        Ohhhhhhhh you found it! Very much under development, be
+                        careful 😘
+                    </p>
+                    <SignInButton mode="modal" class:list="btn btn-primary" />
+                </div>
+            </div>
+        </div>
     </Show>
 </RootLayout>
