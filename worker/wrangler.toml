@@ -1,0 +1,11 @@
+name = "jettyradio-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[vars]
+AZURACAST_BASE_URL = "https://stream.jettyradio.com"
+CLERK_JWKS_URL = "https://live-muskrat-43.clerk.accounts.dev/.well-known/jwks.json"
+ALLOWED_ORIGIN = "https://jettyradio.com"
+
+# Secrets (set via `wrangler secret put`):
+#   AZURACAST_API_KEY

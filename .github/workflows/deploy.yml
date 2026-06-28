@@ -21,6 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       AZURACAST_API_KEY: ${{ secrets.AZURACAST_API_KEY }}
+      PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.PUBLIC_CLERK_PUBLISHABLE_KEY }}
+      PUBLIC_API_BASE_URL: ${{ secrets.PUBLIC_API_BASE_URL }}
     steps:
       - name: Checkout your repository using git
         uses: actions/checkout@v5

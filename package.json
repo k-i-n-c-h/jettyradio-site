@@ -2,6 +2,7 @@
   "name": "jetty-radio",
   "version": "0.0.1",
   "dependencies": {
+    "@clerk/clerk-js": "^6.10.1",
     "astro": "^6.1.3",
     "astro-icon": "^1.1.5",
     "sass-embedded": "^1.99.0"

@@ -39,8 +39,25 @@ import logo from '../assets/jettyradio2.png'
 <nav>
   <a href="/">Home</a> 𒀭
   <a href="/schedule">Schedule</a> 𒀭
-  <a href="/archive">Archives</a>
+  <a href="/archive">Archives</a> 𒀭
+  <a href="/admin" id="admin-link" style="display:none;">Admin</a>
   <br />
   <a href="https://instagram.com/jettyradio" target="_blank">Instagram</a> 𒀭
   <a href="https://www.patreon.com/c/jettyradio" target="_blank">Patreon</a>
 </nav>
+
+<script>
+  import { getClerk } from '../lib/clerk'
+
+  async function showAdminLink() {
+    const clerk = await getClerk()
+    if (clerk.user) {
+      document.getElementById('admin-link')?.style.setProperty('display', 'inline')
+    }
+    clerk.addListener(({ user }) => {
+      const link = document.getElementById('admin-link')
+      if (link) link.style.display = user ? 'inline' : 'none'
+    })
+  }
+  showAdminLink()
+</script>
