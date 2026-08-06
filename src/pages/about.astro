@@ -1,0 +1,65 @@
+---
+import MainLayout from "../layouts/main-layout.astro";
+---
+
+<style lang="scss">
+    section {
+        text-align: center;
+        padding: 0 16px;
+        margin-bottom: 42px;
+    }
+    .info {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    .ctas {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        margin-bottom: 60px;
+    }
+</style>
+<MainLayout title="About | Jetty Radio">
+    <h2 class="page-title">About</h2>
+    <section class="info">
+        <span
+            >Jetty Radio is a locally based, independent internet radio station
+            cultivating community around the people and sounds of Santa Cruz and
+            the Central Coast.</span
+        >
+        <span
+            >Open to submissions from anyone in the community, Jetty is an
+            inclusive platform for experimentation, knowledge sharing, and
+            collaboration between novice and established DJs, musicians, and
+            curious community members alike.
+        </span><span
+            >Jetty Radio offers an alternative listening platform to
+            corporatized streaming services, brought to life by and for
+            independent artists.</span
+        >
+    </section>
+    <section class="ctas">
+        <div>
+            Want to get involved? <a
+                href="https://forms.gle/SqDpDcSrUL37Nbg98"
+                class="link link-primary text-nowrap"
+                target="_blank">Fill out our interest form.</a
+            >
+        </div>
+        <div>
+            Have an idea for a show? <a
+                class="link link-primary text-nowrap"
+                href="https://forms.gle/oQXbVimjwXjUboSV8"
+                target="_blank">Submit a proposal.</a
+            >
+        </div>
+        <div>
+            For all other inquiries, email us at <a
+                class="link link-primary text-nowrap"
+                href="mailto:jettyradio-organizers@googlegroups.com"
+                >jettyradio-organizers@googlegroups.com</a
+            >
+        </div>
+    </section>
+</MainLayout>

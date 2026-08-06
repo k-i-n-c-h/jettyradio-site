@@ -1,53 +1,55 @@
 ---
-import logo from '../assets/jettyradio2.png'
+import logo from "../assets/jettyradio2.png";
 ---
 
 <style>
-  header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 16px;
-    padding: 16px;
-    font-family: serif;
-  }
+    header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        font-family: serif;
+    }
 
-  nav {
-    text-align: center;
-    font-family: serif;
-    font-size: 18px;
-    line-height: 2;
-  }
+    nav {
+        text-align: center;
+        font-family: serif;
+        font-size: 18px;
+        line-height: 2;
+    }
 
-  .subtitle {
-    font-size: 16px;
-  }
+    .subtitle {
+        font-size: 16px;
+    }
 
-  .logo img {
-    max-width: 312px;
-    height: auto;
-    display: block;
-    margin: 0;
-  }
+    .logo img {
+        max-width: 312px;
+        height: auto;
+        display: block;
+        margin: 0;
+    }
 
-  .logo {
-    display: flex;
-    justify-content: center;
-  }
+    .logo {
+        display: flex;
+        justify-content: center;
+    }
 </style>
 <header>
-  <a href="/" class="logo"><img src={logo.src} alt="Jetty Radio" /></a>
-  <p class="subtitle">Santa Cruz-based internet radio</p>
+    <a href="/" class="logo"><img src={logo.src} alt="Jetty Radio" /></a>
+    <p class="subtitle">Santa Cruz-based internet radio</p>
 </header>
 <nav>
-  <a class="link" href="/">Home</a> 𒀭
-  <a class="link" href="/schedule">Schedule</a> 𒀭
-  <a class="link" href="/archive">Archives</a>
-  <br />
-  <a class="link" href="https://instagram.com/jettyradio" target="_blank"
-    >Instagram</a
-  > 𒀭
-  <a class="link" href="https://www.patreon.com/c/jettyradio" target="_blank"
-    >Patreon</a
-  >
+    <a class="link" href="/">Home</a> 𒀭
+    <a class="link" href="/about">About</a> 𒀭
+    <a class="link" href="/schedule">Schedule</a> 𒀭
+    <a class="link" href="/archive">Archives</a> 𒀭
+    <a class="link" href="/support">Support</a>
+    <br />
+    <a class="link" href="https://instagram.com/jettyradio" target="_blank"
+        >Instagram</a
+    > 𒀭
+    <a class="link" href="https://www.patreon.com/c/jettyradio" target="_blank"
+        >Patreon</a
+    >
 </nav>

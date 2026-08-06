@@ -1,0 +1,116 @@
+---
+import MainLayout from "../layouts/main-layout.astro";
+---
+
+<style lang="scss">
+    section {
+        text-align: center;
+        padding: 0 16px;
+        margin-bottom: 32px;
+    }
+    .donation-links {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+        margin-top: 32px;
+        .one-time-donation-link {
+            color: #fff;
+            background: #635bff88;
+            border-radius: 4px;
+            padding: 16px 32px;
+            &:hover {
+                background: #635bffbb;
+            }
+        }
+        .or {
+            font-size: 1.5rem;
+            color: #aaa;
+            font-style: italic;
+        }
+    }
+    .monthly-donation-list {
+        display: flex;
+        gap: 32px;
+        justify-content: center;
+    }
+    .monthly-donation-link {
+        height: 96px;
+        width: 96px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        font-size: 0.75em;
+        font-family: sans-serif;
+        color: #fff;
+        background: #635bff88;
+        text-decoration: none;
+        .dollar-amount {
+            font-size: 20px;
+        }
+        &:hover {
+            background: #635bffbb;
+        }
+    }
+    .cancel-info {
+        font-size: 0.9rem;
+        font-style: italic;
+    }
+</style>
+<MainLayout title="Support | Jetty Radio">
+    <h2 class="page-title">Support</h2>
+    <section>
+        Like what we’re doing and want to show your support? Please consider
+        signing up for a recurring donation to help sustain Jetty Radio. Your
+        donations will help us throw fun events, acquire much needed gear, and
+        maybe even get access to a physical space to stream from!
+    </section>
+    <section>
+        Jetty Radio is a proud community partner of <a
+            class="link link-primary"
+            "
+            href="https://www.indexical.org/">Indexical</a
+        >, and operates as a 501(c)(3). To make a tax deductible donation or
+        monthly contribution, please follow these links to our secure payment
+        platform:
+        <div class="donation-links">
+            <a
+                href="https://buy.stripe.com/14AcN4fnQ4vN7MA7NJ7wA06"
+                class="one-time-donation-link">One-time Donation</a
+            >
+            <span class="or">or</span>
+            <div class="monthly-donation-list">
+                <a
+                    href="https://buy.stripe.com/8x28wO4Jc1jBff22tp7wA07"
+                    class="monthly-donation-link"
+                    ><span class="dollar-amount">$1</span><span
+                        class="recurrence">per month</span
+                    ></a
+                >
+                <a
+                    href="https://buy.stripe.com/bJebJ05Ng4vN0k8ec77wA08"
+                    class="monthly-donation-link"
+                    ><span class="dollar-amount">$3</span><span
+                        class="recurrence">per month</span
+                    ></a
+                >
+                <a
+                    href="https://buy.stripe.com/aFa4gyb7A0fx7MA9VR7wA09"
+                    class="monthly-donation-link"
+                    ><span class="dollar-amount">$5</span><span
+                        class="recurrence">per month</span
+                    ></a
+                >
+            </div>
+            <span class="cancel-info"
+                >Cancel anytime by sending an email to the <a
+                    class="link link-primary text-nowrap"
+                    href="mailto:jettyradio-organizers@googlegroups.com"
+                    >Jetty Radio organizers</a
+                >.</span
+            >
+        </div>
+    </section>
+</MainLayout>
