@@ -11,7 +11,7 @@ The Astro page at `/backstage/desk` calls this Cloudflare Worker. D1 stores priv
 
 ## Development and checks
 
-From `desk-worker`, run `npm ci`, `npm test`, and `npm run check`. Run `npm run build` to validate the Worker bundle without deploying. From the site root, run `./desk-worker/node_modules/.bin/tsc -p src/lib/desk/tsconfig.json` for the browser client. The full Astro build requires the existing archive-read `AZURACAST_API_KEY` and `PUBLIC_CLERK_PUBLISHABLE_KEY`.
+From `desk-worker`, run `npm ci` and `npm run check`. Run `npm run build` to validate the Worker bundle without deploying. From the site root, run `./desk-worker/node_modules/.bin/tsc -p src/lib/desk/tsconfig.json` for the browser client. The full Astro build requires the existing archive-read `AZURACAST_API_KEY` and `PUBLIC_CLERK_PUBLISHABLE_KEY`.
 
 Copy `.dev.vars.example` to ignored `.dev.vars`. Configure the local Clerk issuer, approved development user IDs, verification public key, and localhost origins there. Omit the AzuraCast key for local testing without live station writes. Run `npm run dev` in this directory and the Astro dev server in the site root. Set the site's ignored `.env` `PUBLIC_DESK_API_URL` to the local Worker URL.
 
