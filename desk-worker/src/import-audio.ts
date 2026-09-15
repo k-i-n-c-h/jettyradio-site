@@ -3,6 +3,7 @@ import { upload } from "./upload";
 import type { Env } from "./types";
 import type { Show } from "./data";
 import { mp3Filename } from "./validation.mjs";
+import { driveFile } from "./google";
 export function driveDownloadUrl(link: string) {
   const url = new URL(link);
   if (url.protocol !== "https:" || url.hostname !== "drive.google.com")
@@ -23,7 +24,7 @@ export function driveDownloadUrl(link: string) {
     target.searchParams.set("resourcekey", resourceKey);
   return target;
 }
-export async function importAudio(request: Request, env: Env) {
+export async function importAudio(request: Request, env: Env, googleAccessToken?: string) {
   try {
     const body = JSON.parse(
       new TextDecoder().decode(await readLimited(request, 16384))
@@ -56,7 +57,9 @@ export async function importAudio(request: Request, env: Env) {
     mp3Filename(name, body.uploadId);
     const chunkSize = 1024 * 1024,
       start = (body.chunk - 1) * chunkSize;
-    const response = await fetch(driveDownloadUrl(episode.audio), {
+    const response = googleAccessToken
+      ? await driveFile(episode.audio, googleAccessToken, `bytes=${start}-${start + chunkSize - 1}`)
+      : await fetch(driveDownloadUrl(episode.audio), {
       headers: { Range: `bytes=${start}-${start + chunkSize - 1}` },
       redirect: "manual",
       signal: AbortSignal.timeout(30000),

@@ -3,10 +3,14 @@
   "name": "jettyradio-desk",
   "main": "src/index.ts",
   "compatibility_date": "2026-09-14",
+  "triggers": { "crons": ["* * * * *"] },
   "vars": {
     "ALLOWED_ORIGINS": "https://jettyradio.com",
     "CLERK_ISSUER": "https://clerk.jettyradio.com",
     "CLERK_ALLOWED_USER_IDS": "",
+    "SUBMISSIONS_ENABLED": "false",
+    "SUBMISSIONS_SHEET_ID": "1JWANaTg7HKQzrEQyqv1Y5ksioj-4sqUfu6-IBRDjwXw",
+    "SUBMISSIONS_SHEET_TAB": "Form Responses 1",
   },
   "d1_databases": [
     {

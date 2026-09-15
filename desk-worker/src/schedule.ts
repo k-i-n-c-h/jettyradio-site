@@ -1,6 +1,7 @@
 import { driveDownloadUrl } from "./import-audio";
 import { readLimited } from "./body";
 import type { Env } from "./types";
+import { driveFile, googleToken } from "./google";
 
 import { client, type Media, type Playlist } from "./azura";
 import { type Show } from "./data";
@@ -175,7 +176,9 @@ export async function schedule(request: Request, env: Env) {
       if (!isImage)
         throw new Error("The artwork file is not a valid JPEG or PNG image.");
     } else {
-      const artwork = await fetch(driveDownloadUrl(show.art), {
+      const artwork = show.submissionId && env.GOOGLE_SERVICE_ACCOUNT
+        ? await driveFile(show.art, await googleToken(env))
+        : await fetch(driveDownloadUrl(show.art), {
         redirect: "manual",
         signal: AbortSignal.timeout(20000),
       });

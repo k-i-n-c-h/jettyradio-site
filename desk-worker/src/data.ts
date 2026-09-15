@@ -1,6 +1,7 @@
 export type Show = {
   id: string;
   calendarId?: string;
+  submissionId?: string;
   title: string;
   artist: string;
   date: string;
