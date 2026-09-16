@@ -344,6 +344,7 @@ async function reload() {
     })) as State & { added: number; warnings: string[] };
     state = result;
     render();
+    await loadSubmissions();
     message(
       "desk-status",
       [
@@ -356,6 +357,67 @@ async function reload() {
     );
   });
 }
+async function loadSubmissions() {
+  const panel = $("desk-unassigned-list");
+  panel.replaceChildren();
+  try {
+    const result = await api("/api/submissions") as {
+      enabled: boolean;
+      sync: { checked_at?: string; error?: string } | null;
+      submissions: { id: string; row: number; label: string; audio: string; art: string; state: string; showId?: string; mediaPath?: string; error: string; progress: number }[];
+    };
+    message("desk-unassigned-status", result.sync?.error || (!result.enabled
+      ? "Automatic submission imports are not enabled."
+      : result.sync?.checked_at ? `Last checked ${new Date(result.sync.checked_at).toLocaleString()}. Imports require review before scheduling.`
+      : "Waiting for the first submission check. Existing responses will be skipped."), !!result.sync?.error);
+    const waiting = result.submissions.filter(s => {
+      if (s.state !== "imported") return true;
+      const episode = state?.shows.find(show => show.id === s.showId);
+      return !!s.error && (!episode?.playlistId || !episode?.directory);
+    });
+    if (!waiting.length) panel.append(text("p", "No unassigned submissions or upload problems."));
+    for (const item of waiting) {
+      const row = document.createElement("article");
+      row.className = "desk-import-row";
+      row.append(text("h3", item.label), text("p", `Response row ${item.row} · ${item.mediaPath || (item.state === "uploading" ? `Uploading ${item.progress}%` : "Not uploaded yet")}`));
+      if (item.error) row.append(text("p", item.error));
+      for (const [label, href] of [["Audio", item.audio], ["Artwork", item.art]]) {
+        try {
+          if (new URL(href).protocol !== "https:") continue;
+          const link = document.createElement("a"); link.textContent = label; link.href = href; link.target = "_blank"; link.rel = "noreferrer"; link.className = "link";
+          row.append(link, document.createTextNode(" "));
+        } catch {}
+      }
+      const episode = state?.shows.find(s => s.id === item.showId);
+      if (episode) {
+        const openButton = document.createElement("button"); openButton.type = "button"; openButton.className = "btn btn-ghost"; openButton.textContent = "Review episode";
+        openButton.addEventListener("click", () => { if (!busy) open(episode); }); row.append(openButton);
+      }
+      if (["needs_review", "pending"].includes(item.state)) {
+        const select = document.createElement("select"); select.className = "select"; select.setAttribute("aria-label", `Episode for ${item.label}`);
+        select.add(new Option("Choose the correct episode", ""));
+        for (const show of state?.shows || []) {
+          if (show.status !== "draft" || show.scheduledAt || (show.submissionId && show.submissionId !== item.id)) continue;
+          select.add(new Option(`${show.date} · ${show.title} · ${show.artist}`, show.id));
+        }
+        if (item.showId) select.value = item.showId;
+        const assign = document.createElement("button"); assign.type = "button"; assign.className = "btn btn-outline"; assign.textContent = item.showId ? "Retry import" : "Assign and upload";
+        assign.addEventListener("click", () => void operation("desk-unassigned-status", async () => {
+          if (!select.value) throw new Error("Choose an episode first.");
+          await api("/api/submissions/assign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: item.id, showId: select.value }) });
+          state = await api("/api/desk"); render(); await loadSubmissions();
+        }));
+        row.append(select, assign);
+      }
+      panel.append(row, document.createElement("hr"));
+    }
+  } catch {
+    message("desk-unassigned-status", "Could not load submission imports. Check the backend migration and reload.", true);
+  }
+}
+$("desk-unassigned-refresh").addEventListener("click", () => void operation("desk-unassigned-status", async () => {
+  state = await api("/api/desk"); render(); await loadSubmissions();
+}));
 async function station() {
   const data = (await api("/api/azura")) as {
     connected: boolean;
@@ -787,6 +849,8 @@ $sessionStore.subscribe((session) => {
   } else {
     state = null;
     $("desk-shows").replaceChildren();
+    $("desk-unassigned-list").replaceChildren();
+    message("desk-unassigned-status", "Sign in to view submissions.");
     dialog.close();
     $<HTMLButtonElement>("desk-add").disabled = true;
     message("desk-status", "Sign in to Jetty Backstage.");

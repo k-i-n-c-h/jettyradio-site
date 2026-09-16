@@ -7,6 +7,7 @@ import { archive } from "./archive";
 import { seedWeek } from "./seed";
 import { importAudio } from "./import-audio";
 import { upload } from "./upload";
+import { assignSubmission, submissionStatus, syncSubmissions } from "./submissions";
 import type { Env } from "./types";
 const reply = (error: string, status: number) =>
   Response.json({ error }, { status });
@@ -69,6 +70,8 @@ export function createHandler(verifySession: Verify = verify) {
     try {
       if (path === "/api/desk/seed" && request.method === "POST")
         return finish(await seedWeek(request, env, identity.sub));
+      if (path === "/api/submissions" && request.method === "GET")
+        return finish(await submissionStatus(env));
       if (path === "/api/desk" && request.method === "GET") {
         const row = await env.DB.prepare(
           "SELECT data, revision FROM desk WHERE id = ?"
@@ -139,7 +142,7 @@ export function createHandler(verifySession: Verify = verify) {
       if (path === "/api/azura/upload" && request.method === "POST")
         return finish(await upload(request, env));
       if (
-        ["/api/azura/schedule", "/api/azura/archive"].includes(path) &&
+        ["/api/azura/schedule", "/api/azura/archive", "/api/submissions/assign"].includes(path) &&
         request.method === "POST"
       ) {
         const now = Date.now(),
@@ -157,6 +160,16 @@ export function createHandler(verifySession: Verify = verify) {
             )
           );
         try {
+          if (path === "/api/submissions/assign") {
+            try {
+              return finish(await assignSubmission(request, env));
+            } catch (error) {
+              return finish(reply(
+                error instanceof Error ? error.message : "Could not assign submission.",
+                400
+              ));
+            }
+          }
           return finish(
             path === "/api/azura/archive"
               ? await archive(request, env, identity.sub)
@@ -179,4 +192,9 @@ export function createHandler(verifySession: Verify = verify) {
     }
   };
 }
-export default { fetch: createHandler() };
+export default {
+  fetch: createHandler(),
+  scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(syncSubmissions(env));
+  },
+};
