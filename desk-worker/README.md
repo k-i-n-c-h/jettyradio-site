@@ -13,7 +13,9 @@ The Astro page at `/backstage/desk` calls this Cloudflare Worker. D1 stores priv
 
 From `desk-worker`, run `npm ci` and `npm run check`. Run `npm run build` to validate the Worker bundle without deploying. From the site root, run `./desk-worker/node_modules/.bin/tsc -p src/lib/desk/tsconfig.json` for the browser client. The full Astro build requires the existing archive-read `AZURACAST_API_KEY` and `PUBLIC_CLERK_PUBLISHABLE_KEY`.
 
-Copy the root `.env.example` to `.env` if you do not already have one. Both Astro and the Worker's dev command read this ignored root file. Configure the Clerk development keys and matching issuer, approved development user IDs, verification public key, and localhost origins there. Leave the AzuraCast key empty for local testing without live station writes; archive reads also require that key. Run `npm ci` and `npm run dev` in the site root, and `npm run dev` in this directory in a second terminal. Set `PUBLIC_DESK_API_URL` to the local Worker URL printed by Wrangler, then restart Astro. Apply local database migrations with `npx wrangler d1 migrations apply jettyradio-desk --local` from this directory before using the desk.
+Run `npm run setup` from the site root to install both apps, create the ignored root `.env` if missing, and apply local D1 migrations. Fill in the Clerk development settings and approved user IDs in `.env`, then run `npm run dev` from the root to start Astro and the Worker together. See the root [README](../README.md#making-changes) for the settings and commands. Both apps read the root `.env`; setup preserves existing values. Leave `AZURACAST_API_KEY` empty for local testing without live station writes.
+
+For the Worker alone, run `npm run dev` in this directory. For a Worker bundle check without deploying, run `npm run build`.
 
 If migrating an existing checkout, move settings from `desk-worker/.dev.vars` into the root `.env` and remove `.dev.vars`; the dev command now explicitly loads the root `.env`. Production configuration remains in `wrangler.jsonc` and Cloudflare secrets.
 
