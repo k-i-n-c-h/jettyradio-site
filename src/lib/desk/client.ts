@@ -1,6 +1,6 @@
 import { $sessionStore } from "@clerk/astro/client";
 import type { Show } from "../../../desk-worker/src/data";
-import { hasAired } from "../../../desk-worker/src/schedule-rules.mjs";
+import { hasAired, scheduleMismatch } from "../../../desk-worker/src/schedule-rules.mjs";
 import type {
   AzuraShow as Media,
   AzuraPlaylist as Playlist,
@@ -23,11 +23,15 @@ const form = $<HTMLFormElement>("desk-form"),
 let state: State | null = null,
   editing: Show | null = null,
   playlists: Playlist[] = [],
+  existingAudio: Media[] = [],
   uploadId = "",
+  replacingAudio = false,
+  activeSection = 1,
   suggestedUploadName = "",
   artworkFile: File | null = null,
   artworkPreviewUrl = "",
-  busy = false;
+  busy = false,
+  scheduleApproval = "";
 const field = (name: string) =>
   form.elements.namedItem(name) as HTMLInputElement;
 const week = $<HTMLInputElement>("desk-week");
@@ -146,6 +150,8 @@ function link(name: string) {
 }
 function open(show: Show) {
   editing = { ...show };
+  replacingAudio = false;
+  scheduleApproval = "";
   form.reset();
   clearArtworkPreview();
   field("tracklist").value = show.tracklist || "";
@@ -167,9 +173,15 @@ function open(show: Show) {
   message("desk-archive-status", "");
   $("desk-station").hidden = true;
   playlists = [];
+  existingAudio = [];
+  $("desk-existing").removeAttribute("open");
+  renderExistingAudio();
   audioSummary();
   artworkSummary();
   dialog.showModal();
+  const progress = episodeProgress();
+  openSection(show.scheduledAt || show.status === "archived" ? 4 : Math.max(1, progress.findIndex((done) => !done) + 1), false);
+  $<HTMLDetailsElement>("desk-after-air").open = !!show.scheduledAt || show.status === "archived";
   buttons();
 }
 function reviewed() {
@@ -238,7 +250,71 @@ function selectArtwork(file: File) {
   artworkSummary();
   buttons();
 }
+function scheduleKey() {
+  return JSON.stringify([
+    editing?.id,
+    field("date").value, field("start").value, field("end").value,
+    $<HTMLSelectElement>("desk-playlist").value,
+    playlists.find((p) => p.id === Number($<HTMLSelectElement>("desk-playlist").value))?.schedule_items,
+  ]);
+}
+function scheduleComparison() {
+  const playlist = playlists.find((p) => p.id === Number($<HTMLSelectElement>("desk-playlist").value));
+  const valid = ["date", "start", "end"].every((name) => field(name).value && field(name).validity.valid);
+  const mismatch = playlist && valid ? scheduleMismatch(playlist.schedule_items, {
+    date: field("date").value, start: field("start").value, end: field("end").value,
+  }) : "";
+  const approved = scheduleApproval === scheduleKey();
+  message("desk-schedule-comparison", approved && mismatch
+    ? `When you schedule, the playlist’s recurring slot will change to ${new Date(field("date").value + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" })}, ${field("start").value}–${field("end").value} Pacific, every week.`
+    : mismatch, !!mismatch && !approved);
+  $("desk-fix-schedule").hidden = !mismatch || approved || playlist!.schedule_items.length > 1;
+  $<HTMLButtonElement>("desk-fix-schedule").disabled = busy;
+  return !!mismatch && !approved;
+}
+function episodeProgress() {
+  const saved = state?.shows.find((s) => s.id === editing?.id);
+  return [
+    field("dateConfirmed").checked && ["title", "artist", "date", "start", "end"].every((name) => field(name).value.trim() && field(name).validity.valid),
+    !!saved?.mediaId && saved.audioImportedFrom === field("audio").value && field("audioReviewed").checked && !replacingAudio,
+    field("artReviewed").checked && (editing?.artUploadName ? !!artworkFile : !!field("art").value),
+    !!saved?.scheduledAt,
+  ];
+}
+function openSection(index: number, focus = true) {
+  activeSection = index;
+  for (let step = 1; step <= 4; step++)
+    $<HTMLDetailsElement>(`desk-section-${step}`).open = step === index;
+  if (focus) {
+    const summary = $(`desk-section-${index}`).querySelector("summary")!;
+    summary.focus();
+    summary.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+  updateProgress();
+}
+function updateProgress() {
+  const done = episodeProgress();
+  const saved = state?.shows.find((s) => s.id === editing?.id);
+  const hints = [
+    `${field("date").value || "Choose a date"} · ${field("start").value}–${field("end").value} Pacific`,
+    saved?.mediaId && saved.audioImportedFrom === field("audio").value ? (replacingAudio ? "Replacement upload in progress" : "MP3 attached · " + (done[1] ? "reviewed" : "audio review needed")) : "Upload from Drive, your computer, or retrieve a file",
+    done[2] ? "Artwork reviewed" : artworkFile || field("art").value ? "Artwork selected · review needed" : "Add artwork and an optional tracklist",
+    saved?.scheduledAt ? "Scheduled in AzuraCast" : "Confirm the playlist, folder, and air time",
+  ];
+  done.forEach((complete, i) => {
+    $(`desk-section-${i + 1}`).dataset.complete = String(complete);
+    $(`desk-progress-${i + 1}`).textContent = hints[i];
+  });
+  $("desk-episode-summary").textContent = `${done.slice(0, 3).filter(Boolean).length} of 3 preparation steps complete · ${status(saved || editing!)}`;
+  $("desk-ready-summary").textContent = `${field("title").value || "Episode"} · ${field("artist").value || "Artist"}\n${hints[0]}\n${done.slice(0, 3).every(Boolean) ? "Review complete. Check the show’s playlist and folder below." : "Still needed: " + ["confirmed episode details", saved?.mediaId && saved.audioImportedFrom === field("audio").value ? "audio review" : "uploaded and reviewed audio", "reviewed artwork"].filter((_, i) => !done[i]).join(", ") + "."}`;
+  $("desk-continue").hidden = activeSection === 4;
+  $("desk-continue").textContent = ["", "Continue to audio →", "Continue to artwork →", "Review & schedule →"][activeSection] || "Continue";
+  $<HTMLButtonElement>("desk-continue").disabled = busy;
+  $("desk-schedule").hidden = activeSection !== 4;
+}
 function buttons() {
+  if (editing) updateProgress();
+  const scheduleBlocked = scheduleComparison();
   for (const id of [
     "desk-week",
     "desk-previous-week",
@@ -252,6 +328,8 @@ function buttons() {
     "desk-save",
     "desk-connect",
     "desk-import",
+    "desk-find-audio",
+    "desk-use-audio",
     "desk-upload",
     "desk-schedule",
     "desk-art-choose",
@@ -283,11 +361,16 @@ function buttons() {
   const uploaded = !!(
     saved?.mediaId && saved.audioImportedFrom === field("audio").value
   );
-  field("uploadName").readOnly = busy || uploaded;
+  $("desk-reupload").hidden = !uploaded;
+  $<HTMLButtonElement>("desk-reupload").disabled = busy || !!archived || !!saved?.scheduledAt;
+  $("desk-reupload").textContent = replacingAudio ? "Keep existing upload" : "Upload episode again";
+  const uploadAttached = uploaded && !replacingAudio;
+  $("desk-import").hidden = uploadAttached;
+  field("uploadName").readOnly = busy || uploadAttached;
   let validName = true;
   try {
     const filename = mp3Filename(field("uploadName").value, uploadId);
-    $("desk-filename").textContent = uploaded
+    $("desk-filename").textContent = uploadAttached
       ? "The MP3 name was set when it was uploaded."
       : `AzuraCast filename: ${filename}`;
     field("uploadName").setCustomValidity("");
@@ -302,15 +385,20 @@ function buttons() {
     busy ||
     !validName ||
     !field("audio").value.trim() ||
-    !!(saved?.mediaId && saved.audioImportedFrom === field("audio").value);
+    uploadAttached;
   $<HTMLButtonElement>("desk-upload").disabled =
     busy ||
     !validName ||
-    uploaded ||
+    uploadAttached ||
     !field("audio").value.trim() ||
     !$<HTMLInputElement>("desk-upload-file").files?.length;
+  $<HTMLButtonElement>("desk-use-audio").disabled =
+    busy || !!archived || !!saved?.scheduledAt ||
+    !$<HTMLSelectElement>("desk-existing-audio").value;
   $<HTMLButtonElement>("desk-schedule").disabled =
     busy ||
+    scheduleBlocked ||
+    replacingAudio ||
     !!archived ||
     !reviewed() ||
     !saved?.mediaId ||
@@ -357,6 +445,7 @@ async function reload() {
   });
 }
 async function station() {
+  scheduleApproval = "";
   const data = (await api("/api/azura")) as {
     connected: boolean;
     files: Media[];
@@ -455,17 +544,69 @@ async function attachAudio(
 ) {
   if (!result.id || !result.path)
     throw new Error("AzuraCast did not confirm the MP3 upload.");
+  const replaced = !!episode.mediaId && episode.mediaId !== result.id;
   await saveEpisode({
     ...episode,
+    ...(replaced ? { audioReviewed: false, status: "draft" as const } : {}),
     mediaId: result.id,
     mediaPath: result.path,
     audioImportedFrom: episode.audio,
   });
+  replacingAudio = false;
+  if (replaced) field("audioReviewed").checked = false;
   message(
     "desk-import-status",
-    "Episode MP3 uploaded to AzuraCast. Continue to step 4 to schedule it."
+    replaced
+      ? "New MP3 attached. Review the replacement audio, then schedule it in step 4. The previous file remains in AzuraCast."
+      : "Episode MP3 uploaded to AzuraCast. Continue to step 4 to schedule it."
   );
 }
+function renderExistingAudio() {
+  const select = $<HTMLSelectElement>("desk-existing-audio");
+  const selected = select.value;
+  const query = $<HTMLInputElement>("desk-audio-search").value.trim().toLowerCase();
+  const matches = existingAudio.filter((file) =>
+    `${file.path} ${file.title} ${file.artist}`.toLowerCase().includes(query)
+  );
+  select.replaceChildren(new Option(matches.length ? "Choose this episode’s MP3" : "No matching MP3s", ""));
+  for (const file of matches)
+    select.add(new Option(`${file.path} · ${file.artist || "Unknown artist"} · ${Math.floor(file.length / 60)} min`, String(file.id)));
+  select.value = selected;
+}
+$("desk-audio-search").addEventListener("input", () => {
+  renderExistingAudio();
+  buttons();
+});
+$("desk-existing-audio").addEventListener("change", buttons);
+$("desk-find-audio").addEventListener("click", () =>
+  void operation("desk-import-status", async () => {
+    const data = await api("/api/azura");
+    if (!data.connected) throw new Error("The station connection is not configured.");
+    existingAudio = (data.files as Media[])
+      .filter((file) => /\.mp3$/i.test(file.path))
+      .sort((a, b) => a.path.localeCompare(b.path));
+    renderExistingAudio();
+    message("desk-import-status", `Found ${existingAudio.length} uploaded MP3s. Choose the file for this episode, then use it below.`);
+  })
+);
+$("desk-use-audio").addEventListener("click", () =>
+  void operation("desk-import-status", async () => {
+    const id = Number($<HTMLSelectElement>("desk-existing-audio").value);
+    if (!id) throw new Error("Choose an existing episode MP3.");
+    if (editing?.scheduledAt || editing?.status === "archived")
+      throw new Error("Choose an episode that has not been scheduled or archived.");
+    if (!field("audio").value.trim())
+      throw new Error("Add the original episode MP3 link in the audio section so this upload stays associated with its submission.");
+    if (!form.reportValidity()) throw new Error("Fill in the episode details first.");
+    const data = await api("/api/azura");
+    const file = (data.files as Media[]).find((file) => file.id === id && /\.mp3$/i.test(file.path));
+    if (!data.connected || !file)
+      throw new Error("This MP3 is no longer available. Find uploaded MP3s again.");
+    if (editing?.mediaId !== file.id) field("audioReviewed").checked = false;
+    await attachAudio(readEpisode(), file);
+    message("desk-import-status", `Existing MP3 retrieved: ${file.path}. Complete the review checks, then continue to step 4. No new upload was created.`);
+  })
+);
 $("desk-save").addEventListener(
   "click",
   () =>
@@ -507,6 +648,31 @@ $("desk-archive").addEventListener(
       );
     })
 );
+for (let step = 1; step <= 4; step++) {
+  $(`desk-section-${step}`).querySelector("summary")!.addEventListener("click", (event) => {
+    event.preventDefault();
+    openSection(step, false);
+  });
+}
+$("desk-continue").addEventListener("click", () => {
+  if (!busy) openSection(Math.min(4, activeSection + 1));
+});
+form.addEventListener("invalid", (event) => {
+  const input = event.target as HTMLElement;
+  const section = input.closest<HTMLDetailsElement>(".desk-section");
+  if (section?.id.startsWith("desk-section-")) openSection(Number(section.id.split("-").pop()), false);
+  for (let parent = input.parentElement; parent && parent !== form; parent = parent.parentElement)
+    if (parent instanceof HTMLDetailsElement) parent.open = true;
+}, true);
+$("desk-reupload").addEventListener("click", () => {
+  if (busy) return;
+  replacingAudio = !replacingAudio;
+  if (replacingAudio) uploadId = crypto.randomUUID();
+  message("desk-import-status", replacingAudio
+    ? "Upload again from the episode link or choose an MP3 from this computer. The existing file stays attached until the new upload is confirmed; the old file will remain in AzuraCast."
+    : "Keeping the existing upload.");
+  buttons();
+});
 $("desk-import").addEventListener(
   "click",
   () =>
@@ -555,6 +721,7 @@ $("desk-import").addEventListener(
 form.addEventListener("submit", (e) => {
   e.preventDefault();
   void operation("desk-form-status", async () => {
+    if (scheduleComparison()) throw new Error("Review the schedule difference in step 4 before scheduling.");
     if (!reviewed()) throw new Error("Complete the episode review first.");
     const episode = await saveEpisode();
     if (!episode.mediaId || !episode.playlistId || !episode.directory)
@@ -563,7 +730,7 @@ form.addEventListener("submit", (e) => {
       );
     if (
       !window.confirm(
-        `Schedule ${episode.title} in AzuraCast for ${episode.date}, ${episode.start}–${episode.end} Pacific? This saves the episode details and artwork, moves its MP3 into the show folder, and enables the show’s playlist.`
+        `Schedule ${episode.title} in AzuraCast for ${episode.date}, ${episode.start}–${episode.end} Pacific? This saves the episode details and artwork, moves its MP3 into the show folder, and enables the show’s playlist.${scheduleApproval === scheduleKey() ? " The playlist’s recurring slot will be replaced with this weekday and time, every week." : ""}`
       )
     ) {
       message(
@@ -576,6 +743,7 @@ form.addEventListener("submit", (e) => {
       showId: episode.id,
       playlistId: episode.playlistId,
       expectedRevision: state!.revision,
+      replaceSchedule: scheduleApproval === scheduleKey(),
       expectedSchedule: JSON.stringify(
         playlists.find((p) => p.id === episode.playlistId)?.schedule_items
       ),
@@ -608,6 +776,11 @@ async function reloadAfterSubmit() {
   $("desk-station").hidden = true;
   playlists = [];
 }
+$("desk-fix-schedule").addEventListener("click", () => {
+  if (busy) return;
+  scheduleApproval = scheduleKey();
+  buttons();
+});
 $("desk-close").addEventListener("click", () => {
   if (!busy) dialog.close();
 });
@@ -713,6 +886,7 @@ $("desk-art-drop").addEventListener("drop", (e: DragEvent) => {
 for (const name of ["date", "start", "end"])
   field(name).addEventListener("input", () => {
     field("dateConfirmed").checked = false;
+    scheduleApproval = "";
     buttons();
   });
 for (const name of ["title", "date"])
@@ -738,7 +912,10 @@ $("desk-connect").addEventListener(
   () => void operation("desk-station-status", station)
 );
 for (const id of ["desk-playlist", "desk-directory"])
-  $(id).addEventListener("change", buttons);
+  $(id).addEventListener("change", () => {
+    if (id === "desk-playlist") scheduleApproval = "";
+    buttons();
+  });
 $("desk-upload-file").addEventListener("change", () => {
   uploadId = crypto.randomUUID();
   buttons();

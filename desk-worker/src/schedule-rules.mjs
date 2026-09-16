@@ -50,22 +50,30 @@ export function isPast(show, now = new Date()) {
     `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`
   );
 }
-export function recurringFor(items, episode) {
-  if (items.length !== 1)
-    throw new Error(
-      "Confirm this show has one recurring slot in AzuraCast before submitting."
-    );
+const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const clockTime = (value) => String(Number(value)).padStart(4, "0").replace(/(..)$/, ":$1");
+export function scheduleMismatch(items, episode) {
+  if (items.length > 1)
+    return "This playlist has multiple schedule entries. Choose another playlist or edit those entries in AzuraCast to preserve its other slots.";
   const item = items[0],
     day = new Date(episode.date + "T12:00:00Z").getUTCDay() || 7;
-  if (
-    Number(item.start_time) !== Number(episode.start.replace(":", "")) ||
-    Number(item.end_time) !== Number(episode.end.replace(":", "")) ||
-    !item.days?.includes(day)
-  )
-    throw new Error(
-      "The show playlist does not match the confirmed calendar slot. Correct its recurring schedule in AzuraCast first."
-    );
-  return { ...item, start_date: null, end_date: null };
+  if (item &&
+    Number(item.start_time) === Number(episode.start.replace(":", "")) &&
+    Number(item.end_time) === Number(episode.end.replace(":", "")) &&
+    item.days?.map(Number).includes(day)
+  ) return "";
+  const current = item
+    ? `${item.days?.length ? item.days.map((d) => weekdays[Number(d) % 7]).join(", ") : "Every day"}, ${clockTime(item.start_time)}–${clockTime(item.end_time)}`
+    : "No saved slot";
+  return `The schedules differ. Playlist: ${current}. Episode: ${weekdays[day % 7]}, ${episode.start}–${episode.end}. Times are Pacific. This does not mean the episode time is wrong. Check the playlist selection and step 1, or choose “Use confirmed time for playlist” below.`;
+}
+export function recurringFor(items, episode, replaceSchedule = false) {
+  const mismatch = scheduleMismatch(items, episode);
+  if (items.length > 1 || (mismatch && !replaceSchedule))
+    throw new Error(mismatch);
+  if (mismatch)
+    return { ...items[0], ...scheduleFor(episode), start_date: null, end_date: null };
+  return { ...items[0], start_date: null, end_date: null };
 }
 export function hasAired(show, now = new Date()) {
   return isPast({ ...show, start: show.end }, new Date(now.getTime() - 15000));

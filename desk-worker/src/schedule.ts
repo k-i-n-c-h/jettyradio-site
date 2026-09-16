@@ -41,6 +41,7 @@ export async function schedule(request: Request, env: Env) {
       playlistId: number;
       expectedSchedule: string;
       expectedRevision: number;
+      replaceSchedule?: boolean;
     };
     if (
       typeof body.showId !== "string" ||
@@ -114,11 +115,11 @@ export async function schedule(request: Request, env: Env) {
       );
     if (!directoryData.rows.some((d) => d.path === show.directory))
       throw new Error("The selected show directory no longer exists.");
-    const desired = recurringFor(playlist.schedule_items, show);
     if (JSON.stringify(playlist.schedule_items) !== body.expectedSchedule)
       throw new Error(
         "The live playlist schedule changed. Reload the connection before continuing."
       );
+    const desired = recurringFor(playlist.schedule_items, show, body.replaceSchedule === true);
     if (playlist.is_enabled)
       throw new Error(
         "Choose a disabled playlist to avoid changing audio that is already on air."
