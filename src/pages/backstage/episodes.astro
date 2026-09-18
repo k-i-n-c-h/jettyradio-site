@@ -3,7 +3,7 @@ import AdminLayout from '../../layouts/admin-layout.astro'
 ---
 
 <AdminLayout>
-    <main id="episodes">
+    <main id="episodes" data-api={import.meta.env.PUBLIC_DESK_API_URL || ''}>
         <header>
             <div><h1>Episodes</h1><p>All audio files hosted in Jetty Radio’s AzuraCast library.</p></div>
             <button id="episodes-refresh" class="btn btn-outline" disabled>Refresh</button>
@@ -16,7 +16,11 @@ import AdminLayout from '../../layouts/admin-layout.astro'
         <div class="table-container" tabindex="0" role="region" aria-label="Episode library" hidden>
             <table class="table">
                 <caption class="sr-only">Episodes hosted in AzuraCast</caption>
-                <thead><tr><th scope="col">Episode / file</th><th scope="col">Artist</th><th scope="col">Duration</th><th scope="col">Playlists</th></tr></thead>
+                <thead><tr>
+                    {['Song name', 'File path', 'Artist', 'Duration', 'Playlists'].map((label, index) => (
+                        <th scope="col" aria-sort={index === 0 ? 'ascending' : 'none'}><button type="button" data-sort={index}>{label}<span aria-hidden="true">{index === 0 ? ' ↑' : ' ↕'}</span></button></th>
+                    ))}
+                </tr></thead>
                 <tbody id="episodes-rows"></tbody>
             </table>
         </div>
@@ -24,9 +28,8 @@ import AdminLayout from '../../layouts/admin-layout.astro'
 </AdminLayout>
 
 <script>
-    import { $userStore } from '@clerk/astro/client'
+    import { $sessionStore } from '@clerk/astro/client'
     import type { AzuraShow as Media } from '../../lib/azuracast/types'
-    import { BASE_URL } from '../../lib/azuracast/constants'
 
     const root = document.querySelector<HTMLElement>('#episodes')!
     const search = document.querySelector<HTMLInputElement>('#episodes-search')!
@@ -39,27 +42,32 @@ import AdminLayout from '../../layouts/admin-layout.astro'
     let sessionId: string | undefined
     let request: AbortController | undefined
 
+    let sortColumn = 0
+    let sortDirection = 1
+    const songName = (file: Media) => file.title || file.path.split('/').pop() || 'Untitled episode'
+    const playlistNames = (file: Media) => file.playlists.map(item => item.name).join(', ') || 'No playlist'
+    const sortValue = (file: Media): string | number => [songName(file), file.path, file.artist || '—', Number.isFinite(file.length) ? file.length : -1, playlistNames(file)][sortColumn]
+    const sortButtons = root.querySelectorAll<HTMLButtonElement>('[data-sort]')
+
     function render() {
         const query = search.value.trim().toLowerCase()
         const visible = files.filter(file =>
             `${file.title} ${file.artist} ${file.path}`.toLowerCase().includes(query) &&
-            (!playlist.value || file.playlists.some(item => String(item.id) === playlist.value)))
+            (!playlist.value || file.playlists.some(item => String(item.id) === playlist.value))).sort((a, b) => {
+                const left = sortValue(a), right = sortValue(b)
+                const comparison = typeof left === 'number' && typeof right === 'number'
+                    ? left - right : String(left).localeCompare(String(right), undefined, { numeric: true, sensitivity: 'base' })
+                return comparison * sortDirection || a.id - b.id
+            })
         const fragment = document.createDocumentFragment()
         for (const file of visible) {
             const row = document.createElement('tr')
-            const title = document.createElement('td')
-            const name = document.createElement('span')
-            name.textContent = file.title || file.path.split('/').pop() || 'Untitled episode'
-            const path = document.createElement('small')
-            path.textContent = file.path
-            title.append(name, path)
-            row.append(title)
             const seconds = Math.round(file.length)
             const duration = Number.isFinite(seconds) && seconds >= 0
                 ? (seconds >= 3600 ? `${Math.floor(seconds / 3600)}:` : '') +
                   `${String(Math.floor(seconds / 60) % 60).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
                 : '—'
-            for (const value of [file.artist || '—', duration, file.playlists.map(item => item.name).join(', ') || 'No playlist']) {
+            for (const value of [songName(file), file.path, file.artist || '—', duration, playlistNames(file)]) {
                 const cell = document.createElement('td')
                 cell.textContent = value
                 row.append(cell)
@@ -84,18 +92,23 @@ import AdminLayout from '../../layouts/admin-layout.astro'
         table.hidden = true
         status.textContent = 'Loading episodes from AzuraCast…'
         try {
-            const apiKey = $userStore.get()?.publicMetadata.azuracastApiKey
-            if (typeof apiKey !== 'string' || !apiKey)
-                throw new Error('Your account needs an AzuraCast API key. Ask the station administrator to connect your account.')
-            const response = await fetch(`${BASE_URL}/files`, {
-                headers: { 'X-API-Key': apiKey },
+            if (!root.dataset.api) throw new Error('The station connection is not configured. Set PUBLIC_DESK_API_URL to connect the episode library.')
+            const base = new URL(root.dataset.api)
+            if (base.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(base.hostname))
+                throw new Error('The station connection needs a secure backend URL.')
+            const token = await $sessionStore.get()?.getToken()
+            if (!token) throw new Error('Sign in to Jetty Backstage to browse episodes.')
+            if (controller.signal.aborted) return
+            const response = await fetch(new URL('/api/azura', base), {
+                headers: { Authorization: `Bearer ${token}` },
                 signal: controller.signal,
             })
             const data = await response.json()
             if (controller.signal.aborted) return
             if (!response.ok) throw new Error(data.error || `Could not load episodes (${response.status}).`)
-            if (!Array.isArray(data)) throw new Error('AzuraCast returned an unexpected episode list.')
-            files = (data as Media[]).sort((a, b) => (a.title || a.path).localeCompare(b.title || b.path))
+            if (!data.connected) throw new Error('The AzuraCast station connection is not configured.')
+            if (!Array.isArray(data.files)) throw new Error('AzuraCast returned an unexpected episode list.')
+            files = data.files as Media[]
             const selected = playlist.value
             const playlists = new Map(files.flatMap(file => file.playlists.map(item => [item.id, item.name] as const)))
             playlist.replaceChildren(new Option('All playlists', ''))
@@ -113,13 +126,24 @@ import AdminLayout from '../../layouts/admin-layout.astro'
         }
     }
 
+    for (const button of sortButtons) button.addEventListener('click', () => {
+        const column = Number(button.dataset.sort)
+        sortDirection = sortColumn === column ? -sortDirection : 1
+        sortColumn = column
+        for (const item of sortButtons) {
+            const active = Number(item.dataset.sort) === sortColumn
+            item.closest('th')!.setAttribute('aria-sort', active ? (sortDirection === 1 ? 'ascending' : 'descending') : 'none')
+            item.querySelector('span')!.textContent = active ? (sortDirection === 1 ? ' ↑' : ' ↓') : ' ↕'
+        }
+        render()
+    })
     search.addEventListener('input', render)
     playlist.addEventListener('change', render)
     refresh.addEventListener('click', () => void load())
-    $userStore.subscribe(user => {
-        if (user) {
-            if (sessionId !== user.id) {
-                sessionId = user.id
+    $sessionStore.subscribe(session => {
+        if (session?.status === 'active') {
+            if (sessionId !== session.id) {
+                sessionId = session.id
                 void load()
             }
         } else {
@@ -149,7 +173,10 @@ import AdminLayout from '../../layouts/admin-layout.astro'
     table{width:100%;min-width:650px}
     th{color:#ccc}th,main :global(td){padding:16px;vertical-align:top}
     main :global(td:first-child){min-width:240px;max-width:480px;overflow-wrap:anywhere}
-    main :global(td small){display:block;margin-top:6px;color:#bbb}
+    main :global(td:nth-child(2)){max-width:360px;overflow-wrap:anywhere;color:#bbb}
+    th button{cursor:pointer;display:flex;gap:6px;white-space:nowrap;text-align:left}
+    th button:hover{color:#c8e6a0}
+    th button:focus-visible{outline:2px solid #c8e6a0;outline-offset:4px}
     .btn-outline{color:#f2f2f2;border-color:#aaa89f}
     .btn-outline:hover{color:#172210;background:#c8e6a0}
     [hidden]{display:none}
