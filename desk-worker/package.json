@@ -1,0 +1,21 @@
+{
+  "name": "jettyradio-desk-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "build": "wrangler deploy --dry-run --outdir dist",
+    "dev": "wrangler dev --env-file ../.env",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@clerk/backend": "^3.17.2",
+    "ical.js": "2.2.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260914.1",
+    "@types/node": "^26.5.1",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.131.2"
+  }
+}

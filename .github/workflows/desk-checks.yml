@@ -1,0 +1,36 @@
+name: Desk checks
+
+on:
+  pull_request:
+    paths:
+      - 'desk-worker/**'
+      - 'src/lib/desk/**'
+      - 'src/pages/backstage/**'
+      - '.github/workflows/desk-checks.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'desk-worker/**'
+      - 'src/lib/desk/**'
+      - 'src/pages/backstage/**'
+      - '.github/workflows/desk-checks.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  desk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: desk-worker
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: desk-worker/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build

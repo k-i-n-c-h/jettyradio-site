@@ -1,0 +1,26 @@
+export type Show = {
+  id: string;
+  calendarId?: string;
+  title: string;
+  artist: string;
+  date: string;
+  start: string;
+  end: string;
+  owner: string;
+  audio: string;
+  art: string;
+  notes: string;
+  tracklist?: string;
+  mediaId?: number;
+  playlistId?: number;
+  directory?: string;
+  scheduledAt?: string;
+  mediaPath?: string;
+  uploadName?: string;
+  artUploadName?: string;
+  audioImportedFrom?: string;
+  dateConfirmed: boolean;
+  audioReviewed: boolean;
+  artReviewed: boolean;
+  status: "draft" | "ready" | "archived";
+};
