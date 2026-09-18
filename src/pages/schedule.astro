@@ -45,6 +45,13 @@ const gCalUrl = `https://www.google.com/calendar/render?cid=${icsUrl}`
     font-family: serif;
     font-size: 14px;
     line-height: 2;
+    a {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      &:hover {
+        color: #fff;
+      }
+    }
   }
 </style>
 <MainLayout title="Schedule | Jetty Radio">
