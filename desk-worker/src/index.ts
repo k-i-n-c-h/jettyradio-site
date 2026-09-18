@@ -3,6 +3,7 @@ import { verifyToken } from "@clerk/backend";
 import { validateShows } from "./validation.mjs";
 import { station } from "./station";
 import { schedule } from "./schedule";
+import { reconcile } from "./reconcile";
 import { archive } from "./archive";
 import { seedWeek } from "./seed";
 import { importAudio } from "./import-audio";
@@ -139,7 +140,7 @@ export function createHandler(verifySession: Verify = verify) {
       if (path === "/api/azura/upload" && request.method === "POST")
         return finish(await upload(request, env));
       if (
-        ["/api/azura/schedule", "/api/azura/archive"].includes(path) &&
+        ["/api/azura/schedule", "/api/azura/archive", "/api/azura/reconcile"].includes(path) &&
         request.method === "POST"
       ) {
         const now = Date.now(),
@@ -158,7 +159,9 @@ export function createHandler(verifySession: Verify = verify) {
           );
         try {
           return finish(
-            path === "/api/azura/archive"
+            path === "/api/azura/reconcile"
+              ? await reconcile(request, env, identity.sub)
+              : path === "/api/azura/archive"
               ? await archive(request, env, identity.sub)
               : await schedule(request, env)
           );

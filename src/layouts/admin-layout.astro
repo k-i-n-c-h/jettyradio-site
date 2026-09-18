@@ -1,11 +1,14 @@
 ---
 import RootLayout from './root-layout.astro'
 import { Show, SignInButton, UserButton } from '@clerk/astro/components'
+
+interface Props { showNavigation?: boolean }
+const { showNavigation = true } = Astro.props
 ---
 
 <RootLayout title="Jetty Admin">
     <Show when="signed-in">
-        <div class="navbar bg-base-100 px-8 w-full">
+        {showNavigation && <div class="navbar bg-base-100 px-8 w-full">
             <div class="flex-1">
                 <a class="btn btn-ghost" href="/backstage">Jetty Backstage</a>
             </div>
@@ -17,7 +20,7 @@ import { Show, SignInButton, UserButton } from '@clerk/astro/components'
                 </ul>
             </div>
             <UserButton />
-        </div>
+        </div>}
         <slot />
     </Show>
     <Show when="signed-out">

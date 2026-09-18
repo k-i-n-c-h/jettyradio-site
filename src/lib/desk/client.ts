@@ -55,7 +55,9 @@ const status = (s: Show) =>
       ? "Scheduled in AzuraCast"
       : s.status === "ready"
         ? "Ready to schedule"
-        : s.audio
+        : s.mediaId
+          ? "MP3 attached"
+          : s.audio
           ? "Needs review"
           : "Awaiting audio";
 async function api(path: string, init: RequestInit = {}) {
@@ -106,15 +108,14 @@ function render() {
   list.replaceChildren();
   $("desk-count").textContent = `${rows.length} episodes`;
   $("desk-summary").textContent =
-    `${rows.filter((s) => s.audio && s.status === "draft").length} submissions to review · ${rows.filter((s) => !s.audio && s.status !== "archived").length} awaiting audio.`;
+    `${rows.filter((s) => s.audio && s.status === "draft").length} submissions to review · ${rows.filter((s) => !s.audio && !s.mediaId && s.status !== "archived").length} awaiting audio.`;
   if (!rows.length)
     list.append(
       text("p", "No episodes this week. Choose another week or add an episode.")
     );
   for (const show of rows) {
-    const button = document.createElement("button");
-    button.className = "desk-row";
-    button.type = "button";
+    const row = document.createElement("div");
+    row.className = "desk-row";
     const date = text(
       "time",
       `${new Date(show.date + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "short", day: "numeric", timeZone: "UTC" })}\n${show.start}–${show.end}`
@@ -127,12 +128,24 @@ function render() {
     );
     const badge = text("span", status(show));
     badge.className = "desk-badge";
-    button.append(date, title, badge);
-    button.disabled = busy;
-    button.addEventListener("click", () => {
-      if (!busy) open(show);
-    });
-    list.append(button);
+    title.append(badge);
+    const actions = document.createElement("div");
+    actions.className = "desk-row-actions";
+    for (const action of ["Schedule", "Archive"] as const) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "btn btn-outline";
+      button.textContent = action;
+      button.setAttribute("aria-label", `${action} ${show.title} (${show.date})`);
+      button.dataset.unavailable = String(action === "Schedule" && show.status === "archived");
+      button.disabled = busy || button.dataset.unavailable === "true";
+      button.addEventListener("click", () => {
+        if (!busy) open(show, action === "Archive" ? "archive" : "schedule");
+      });
+      actions.append(button);
+    }
+    row.append(date, title, actions);
+    list.append(row);
   }
 }
 function link(name: string) {
@@ -148,7 +161,11 @@ function link(name: string) {
     a.hidden = true;
   }
 }
-function open(show: Show) {
+function open(show: Show, action: "schedule" | "archive" = "schedule") {
+  if (action === "archive") {
+    openArchive(show);
+    return;
+  }
   editing = { ...show };
   replacingAudio = false;
   scheduleApproval = "";
@@ -173,15 +190,18 @@ function open(show: Show) {
   message("desk-archive-status", "");
   $("desk-station").hidden = true;
   playlists = [];
+  $<HTMLSelectElement>("desk-playlist").replaceChildren(new Option("Choose this show’s playlist", ""));
+  $<HTMLSelectElement>("desk-directory").replaceChildren(new Option("Choose this show’s folder", ""));
   existingAudio = [];
   $("desk-existing").removeAttribute("open");
+  $<HTMLInputElement>("desk-audio-search").value = "";
+  $<HTMLSelectElement>("desk-reconcile-playlist").replaceChildren(new Option("Find uploaded MP3s first", ""));
   renderExistingAudio();
   audioSummary();
   artworkSummary();
   dialog.showModal();
   const progress = episodeProgress();
   openSection(show.scheduledAt || show.status === "archived" ? 4 : Math.max(1, progress.findIndex((done) => !done) + 1), false);
-  $<HTMLDetailsElement>("desk-after-air").open = !!show.scheduledAt || show.status === "archived";
   buttons();
 }
 function reviewed() {
@@ -322,14 +342,15 @@ function buttons() {
     "desk-add",
   ])
     $<HTMLInputElement>(id).disabled = busy || !state;
-  for (const row of document.querySelectorAll<HTMLButtonElement>(".desk-row"))
-    row.disabled = busy;
+  for (const row of document.querySelectorAll<HTMLButtonElement>(".desk-row-actions button"))
+    row.disabled = busy || row.dataset.unavailable === "true";
   for (const id of [
     "desk-save",
     "desk-connect",
     "desk-import",
     "desk-find-audio",
     "desk-use-audio",
+    "desk-reconcile",
     "desk-upload",
     "desk-schedule",
     "desk-art-choose",
@@ -340,23 +361,9 @@ function buttons() {
   $<HTMLInputElement>("desk-art-file").disabled = busy;
   const saved = state?.shows.find((s) => s.id === editing?.id);
   const archived = saved?.status === "archived";
-  const canArchive = !!(
-    saved?.mediaId &&
-    saved.playlistId &&
-    saved.dateConfirmed &&
-    hasAired(saved) &&
-    !archived
-  );
-  $<HTMLButtonElement>("desk-archive").disabled = busy || !canArchive;
-  $("desk-archive-summary").textContent = archived
-    ? "This episode is archived. Its MP3 remains in the show folder."
-    : !saved?.mediaId || !saved.playlistId || !saved.dateConfirmed
-      ? "Save the confirmed air date, uploaded MP3, and show playlist to archive this episode."
-      : !hasAired(saved)
-        ? `Available after ${saved.date} at ${saved.end} Pacific, plus the 15-second audio allowance.`
-        : `Archive the episode that aired ${saved.date}, ${saved.start}–${saved.end} Pacific.`;
+  archiveButtons();
   for (const step of form.querySelectorAll<HTMLFieldSetElement>("fieldset"))
-    if (step.id !== "desk-archive-section") step.disabled = !!archived;
+    step.disabled = !!archived;
   $<HTMLButtonElement>("desk-save").disabled = busy || !!archived;
   const uploaded = !!(
     saved?.mediaId && saved.audioImportedFrom === field("audio").value
@@ -395,6 +402,7 @@ function buttons() {
   $<HTMLButtonElement>("desk-use-audio").disabled =
     busy || !!archived || !!saved?.scheduledAt ||
     !$<HTMLSelectElement>("desk-existing-audio").value;
+  $<HTMLButtonElement>("desk-reconcile").disabled = busy || !!archived || !field("dateConfirmed").checked || !$<HTMLSelectElement>("desk-existing-audio").value || !$<HTMLSelectElement>("desk-reconcile-playlist").value;
   $<HTMLButtonElement>("desk-schedule").disabled =
     busy ||
     scheduleBlocked ||
@@ -577,7 +585,29 @@ $("desk-audio-search").addEventListener("input", () => {
   renderExistingAudio();
   buttons();
 });
-$("desk-existing-audio").addEventListener("change", buttons);
+$("desk-reconcile-playlist").addEventListener("change", buttons);
+$("desk-existing-audio").addEventListener("change", () => {
+  const file = existingAudio.find((f) => f.id === Number($<HTMLSelectElement>("desk-existing-audio").value));
+  const select = $<HTMLSelectElement>("desk-reconcile-playlist");
+  const matching = Array.from(select.options).filter((o) => file?.playlists.some((p) => String(p.id) === o.value));
+  select.value = matching.length === 1 ? matching[0].value : "";
+  buttons();
+});
+$("desk-reconcile").addEventListener("click", () =>
+  void operation("desk-import-status", async () => {
+    if (!form.reportValidity()) throw new Error("Fill in the episode details first.");
+    const mediaId = Number($<HTMLSelectElement>("desk-existing-audio").value);
+    const playlistId = Number($<HTMLSelectElement>("desk-reconcile-playlist").value);
+    const episode = await saveEpisode();
+    await api("/api/azura/reconcile", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ showId: episode.id, expectedRevision: state!.revision, mediaId, playlistId }),
+    });
+    await reloadAfterSubmit();
+    field("audioReviewed").checked = false;
+    message("desk-import-status", `Reconciled: ${status(editing!)}. AzuraCast was unchanged. Use the Archive button in the weekly schedule to archive an aired episode.`);
+  })
+);
 $("desk-find-audio").addEventListener("click", () =>
   void operation("desk-import-status", async () => {
     const data = await api("/api/azura");
@@ -585,6 +615,10 @@ $("desk-find-audio").addEventListener("click", () =>
     existingAudio = (data.files as Media[])
       .filter((file) => /\.mp3$/i.test(file.path))
       .sort((a, b) => a.path.localeCompare(b.path));
+    const select = $<HTMLSelectElement>("desk-reconcile-playlist");
+    select.replaceChildren(new Option("Choose this episode’s show playlist", ""));
+    for (const p of (data.playlists as Playlist[]).filter((p) => p.source === "songs" && p.schedule_items.length && !["archives", "heavy rotation"].includes(p.name.toLowerCase())))
+      select.add(new Option(`${p.name} · ${p.is_enabled ? "enabled" : "disabled"}`, String(p.id)));
     renderExistingAudio();
     message("desk-import-status", `Found ${existingAudio.length} uploaded MP3s. Choose the file for this episode, then use it below.`);
   })
@@ -595,8 +629,6 @@ $("desk-use-audio").addEventListener("click", () =>
     if (!id) throw new Error("Choose an existing episode MP3.");
     if (editing?.scheduledAt || editing?.status === "archived")
       throw new Error("Choose an episode that has not been scheduled or archived.");
-    if (!field("audio").value.trim())
-      throw new Error("Add the original episode MP3 link in the audio section so this upload stays associated with its submission.");
     if (!form.reportValidity()) throw new Error("Fill in the episode details first.");
     const data = await api("/api/azura");
     const file = (data.files as Media[]).find((file) => file.id === id && /\.mp3$/i.test(file.path));
@@ -613,39 +645,6 @@ $("desk-save").addEventListener(
     void operation("desk-form-status", async () => {
       await saveEpisode();
       message("desk-form-status", "Draft saved.");
-    })
-);
-$("desk-archive").addEventListener(
-  "click",
-  () =>
-    void operation("desk-archive-status", async () => {
-      const episode = state?.shows.find((s) => s.id === editing?.id);
-      if (!episode || !hasAired(episode))
-        throw new Error("Choose an episode whose slot has ended.");
-      if (
-        !window.confirm(
-          `Archive ${episode.title} (${episode.date})? This adds its MP3 to Archives and heavy rotation, removes it from the show playlist, saves the confirmed air date as MM/DD/YYYY, and disables the show playlist. Unsaved form edits are not included.`
-        )
-      ) {
-        message("desk-archive-status", "Archiving cancelled.");
-        return;
-      }
-      const result = await api("/api/azura/archive", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          showId: episode.id,
-          expectedRevision: state!.revision,
-        }),
-      });
-      await reloadAfterSubmit();
-      message(
-        "desk-archive-status",
-        result.planUpdated
-          ? "Archived in AzuraCast: added to Archives and heavy rotation, removed from the show playlist, air date checked, and show playlist disabled."
-          : "Archived in AzuraCast, but a newer desk save prevented updating this draft. Reload, review the episode, and archive again to update its status.",
-        !result.planUpdated
-      );
     })
 );
 for (let step = 1; step <= 4; step++) {
@@ -775,6 +774,8 @@ async function reloadAfterSubmit() {
   artworkSummary();
   $("desk-station").hidden = true;
   playlists = [];
+  $<HTMLSelectElement>("desk-playlist").replaceChildren(new Option("Choose this show’s playlist", ""));
+  $<HTMLSelectElement>("desk-directory").replaceChildren(new Option("Choose this show’s folder", ""));
 }
 $("desk-fix-schedule").addEventListener("click", () => {
   if (busy) return;
@@ -958,6 +959,125 @@ $("desk-upload").addEventListener(
       await attachAudio(episode, result);
     })
 );
+const archiveDialog = $<HTMLDialogElement>("desk-archive-editor");
+const archiveForm = $<HTMLFormElement>("desk-archive-form");
+const archiveField = (name: string) => archiveForm.elements.namedItem(name) as HTMLInputElement;
+let archiveEpisode: Show | null = null;
+let archiveFiles: Media[] = [];
+function openArchive(show: Show) {
+  archiveEpisode = { ...show };
+  archiveFiles = [];
+  archiveForm.reset();
+  for (const name of ["date", "start", "end"] as const) archiveField(name).value = show[name];
+  $("desk-archive-title").textContent = `${show.title} · ${show.artist}`;
+  $<HTMLSelectElement>("desk-archive-media").replaceChildren(new Option("Find the episode MP3", ""));
+  $<HTMLSelectElement>("desk-archive-playlist").replaceChildren(new Option("Choose the show playlist", ""));
+  message("desk-archive-status", "");
+  archiveButtons();
+  archiveDialog.showModal();
+  if (show.status !== "archived") void operation("desk-archive-status", loadArchiveStation);
+}
+function archiveButtons() {
+  const archived = archiveEpisode?.status === "archived";
+  const aired = hasAired({ date: archiveField("date").value, end: archiveField("end").value });
+  $<HTMLFieldSetElement>("desk-archive-fields").disabled = busy || !!archived;
+  $<HTMLButtonElement>("desk-archive").disabled = busy || !archiveEpisode || !!archived || !aired ||
+    !archiveField("dateConfirmed").checked || !$<HTMLSelectElement>("desk-archive-media").value || !$<HTMLSelectElement>("desk-archive-playlist").value;
+  $("desk-archive-summary").textContent = archived
+    ? "This episode is archived. Its MP3 remains in the show folder."
+    : !aired ? "Archiving is available after the Pacific slot ends, plus the 15-second audio allowance."
+    : "Confirm the air date, MP3, and show playlist before archiving.";
+}
+function renderArchiveFiles() {
+  const select = $<HTMLSelectElement>("desk-archive-media");
+  const selected = select.value;
+  const query = $<HTMLInputElement>("desk-archive-search").value.trim().toLowerCase();
+  select.replaceChildren(new Option("Choose this episode’s MP3", ""));
+  for (const file of archiveFiles.filter((f) => `${f.path} ${f.title} ${f.artist}`.toLowerCase().includes(query)))
+    select.add(new Option(`${file.path} · ${file.artist || "Unknown artist"}`, String(file.id)));
+  select.value = selected;
+}
+async function loadArchiveStation() {
+  const data = await api("/api/azura");
+  if (!data.connected) throw new Error("The station connection is not configured.");
+  archiveFiles = (data.files as Media[]).filter((f) => /\.mp3$/i.test(f.path)).sort((a, b) => a.path.localeCompare(b.path));
+  renderArchiveFiles();
+  const select = $<HTMLSelectElement>("desk-archive-playlist");
+  select.replaceChildren(new Option("Choose the show playlist", ""));
+  for (const p of (data.playlists as Playlist[]).filter((p) => p.source === "songs" && p.schedule_items.length && !["archives", "heavy rotation"].includes(p.name.toLowerCase())))
+    select.add(new Option(`${p.name} · ${p.is_enabled ? "enabled" : "disabled"}`, String(p.id)));
+  if (archiveEpisode?.mediaId) $<HTMLSelectElement>("desk-archive-media").value = String(archiveEpisode.mediaId);
+  if (archiveEpisode?.playlistId) select.value = String(archiveEpisode.playlistId);
+  message("desk-archive-status", "Check the selected MP3 and playlist belong to this episode.");
+}
+$("desk-archive-find").addEventListener("click", () => void operation("desk-archive-status", loadArchiveStation));
+$("desk-archive-search").addEventListener("input", () => { renderArchiveFiles(); archiveButtons(); });
+$("desk-archive-media").addEventListener("change", () => {
+  const file = archiveFiles.find((f) => f.id === Number($<HTMLSelectElement>("desk-archive-media").value));
+  const select = $<HTMLSelectElement>("desk-archive-playlist");
+  const matches = Array.from(select.options).filter((o) => file?.playlists.some((p) => String(p.id) === o.value));
+  select.value = matches.length === 1 ? matches[0].value : "";
+  archiveButtons();
+});
+for (const name of ["date", "start", "end"]) archiveField(name).addEventListener("input", () => {
+  archiveField("dateConfirmed").checked = false;
+});
+archiveForm.addEventListener("input", archiveButtons);
+archiveForm.addEventListener("change", archiveButtons);
+$("desk-archive-close").addEventListener("click", () => { if (!busy) archiveDialog.close(); });
+archiveDialog.addEventListener("cancel", (event) => { if (busy) event.preventDefault(); });
+archiveForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  if (!archiveForm.reportValidity()) return;
+  void operation("desk-archive-status", async () => {
+    if (!archiveEpisode || !state) throw new Error("Choose an episode to archive.");
+    const episode: Show = {
+      ...archiveEpisode,
+      date: archiveField("date").value, start: archiveField("start").value, end: archiveField("end").value,
+      dateConfirmed: archiveField("dateConfirmed").checked,
+    };
+    if (!episode.dateConfirmed || !hasAired(episode)) throw new Error("Confirm an episode whose Pacific slot has ended.");
+    const mediaId = Number($<HTMLSelectElement>("desk-archive-media").value);
+    const playlistId = Number($<HTMLSelectElement>("desk-archive-playlist").value);
+    const file = archiveFiles.find((f) => f.id === mediaId);
+    if (!file || !playlistId) throw new Error("Choose the episode MP3 and show playlist.");
+    const shows = state.shows.map((s) => s.id === episode.id ? episode : s);
+    validateShows(shows);
+    if (!window.confirm(`Archive ${episode.title}, aired ${episode.date}, ${episode.start}–${episode.end} Pacific? MP3: ${file.path}. This adds it to Archives and heavy rotation, removes it from the selected show playlist, and disables that playlist.`)) {
+      message("desk-archive-status", "Archiving cancelled.");
+      return;
+    }
+    state = await api("/api/desk", {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ shows, revision: state.revision }),
+    });
+    render();
+    if (episode.mediaId !== mediaId || episode.playlistId !== playlistId || episode.mediaPath !== file.path) {
+      await api("/api/azura/reconcile", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ showId: episode.id, expectedRevision: state!.revision, mediaId, playlistId }),
+      });
+      state = await api("/api/desk");
+      archiveEpisode = state!.shows.find((s) => s.id === episode.id)!;
+      render();
+      if (archiveEpisode.status === "archived") {
+        message("desk-archive-status", "Already archived in AzuraCast. The desk is now up to date.");
+        return;
+      }
+    }
+    const result = await api("/api/azura/archive", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ showId: episode.id, expectedRevision: state!.revision }),
+    });
+    state = await api("/api/desk");
+    archiveEpisode = state!.shows.find((s) => s.id === episode.id)!;
+    render();
+    message("desk-archive-status", result.planUpdated
+      ? "Archived in AzuraCast: added to Archives and heavy rotation, air date saved, and show playlist disabled."
+      : "Archived in AzuraCast, but the desk changed during archiving. Close and reopen this form to reconcile its state.", !result.planUpdated);
+  });
+});
+
 $sessionStore.subscribe((session) => {
   if (session?.status === "active") {
     if (!state && !busy) void reload();
@@ -965,6 +1085,8 @@ $sessionStore.subscribe((session) => {
     state = null;
     $("desk-shows").replaceChildren();
     dialog.close();
+    archiveDialog.close();
+    archiveEpisode = null;
     $<HTMLButtonElement>("desk-add").disabled = true;
     message("desk-status", "Sign in to Jetty Backstage.");
   }

@@ -19,6 +19,23 @@ For the Worker alone, run `npm run dev` in this directory. For a Worker bundle c
 
 If migrating an existing checkout, move settings from `desk-worker/.dev.vars` into the root `.env` and remove `.dev.vars`; the dev command now explicitly loads the root `.env`. Production configuration remains in `wrangler.jsonc` and Cloudflare secrets.
 
+## GitHub deployment
+
+The existing `.github/workflows/deploy.yml` builds the site, checks and deploys the Worker, then publishes GitHub Pages. A failed backend deployment prevents publishing the new frontend. Production runs are serialized; only `main` can deploy. Pushes to `main`, the daily rebuild, and manual runs on `main` all use this sequence.
+
+Before merging this workflow, configure repository Settings → Secrets and variables → Actions:
+
+| Type | Name | Value |
+| --- | --- | --- |
+| Secret | `CLOUDFLARE_API_TOKEN` | Cloudflare API token permitted to deploy Workers in the Jetty account. Start with the Edit Cloudflare Workers template and restrict it to that account. |
+| Secret | `CLOUDFLARE_ACCOUNT_ID` | Account ID containing `jettyradio-desk` and its D1 database. |
+| Variable | `CLERK_ALLOWED_USER_IDS` | Comma-separated approved production Clerk user IDs. The workflow overrides the empty checked-in allowlist. |
+| Variable | `PUBLIC_DESK_API_URL` | `https://jettyradio-desk.jettyradio-desk-api.workers.dev` |
+
+Keep the existing website secrets `AZURACAST_API_KEY` and `PUBLIC_CLERK_PUBLISHABLE_KEY`. The Worker's `CLERK_JWT_KEY` and restricted `AZURACAST_API_KEY` remain in Cloudflare; deployments preserve them. Missing deployment settings fail the job without publishing the new website. Database migrations remain an explicit release step; this change adds none. A Pages failure after the Worker deploys does not roll back the Worker.
+
+Cloudflare authentication setup: https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/
+
 ## Production release
 
 1. Use the existing Jetty Radio production Clerk application (`app_3D15hcu4pamOV5rIVa5Kwq7XnVh`, instance `ins_3FmZ7vL7amnulcEotJHPkWCoSNj`). Dashboard access is confirmed. The production website is invite-only; the scheduler's invitation must be accepted after DNS is repaired. Dashboard collaborators and personal development users are not production website users.
@@ -53,6 +70,14 @@ If migrating an existing checkout, move settings from `desk-worker/.dev.vars` in
 - The Worker serializes desk scheduling and archiving requests with the same station lock; people editing directly in AzuraCast are outside that lock.
 - Opening or changing a week checks the same public Google Calendar feed used by the schedule page and adds missing draft episodes with Pacific air dates, times, show names, and artists. No Google login is required. Recurrences, exclusions, moved occurrences, and cancellations are applied when creating episodes; existing drafts, submissions, and archived records are retained. Calendar changes never overwrite a saved time or delete an episode; mismatches and overlapping or overnight slots require manual review. Stable calendar identities prevent duplicates, including after editing an episode, and concurrent saves are merged with revision checks. The plan remains capped at 500 episodes.
 - Google form/email ingestion is not wired into this Worker. Existing submission notifications remain separate. Calendar drafts begin Awaiting audio; submission links and reviews still need to be entered in the desk.
+
+## Reconciling episodes managed in AzuraCast
+
+Choose the episode’s week, or add an episode if it is not in the desk. Confirm its air date/time, then open Episode audio → Use an MP3 already uploaded to AzuraCast. Find and select the MP3 and its existing show playlist, then choose Reconcile with AzuraCast. The submission link and artwork are optional for this path.
+
+Reconciliation only reads AzuraCast and updates the desk using revision checks. It rejects conflicting file air dates and MP3s already linked to another desk episode. A matching enabled schedule is marked scheduled; other show assignments remain MP3 attached and can still be archived after airing. A completed external archive is recognized only when both archive destinations, the confirmed air date, and a disabled show playlist agree. Use the episode row’s Archive button to open a separate form that confirms air date/time, MP3, and show playlist. It reconciles newly selected media before archiving; existing attachments retain the archive retry checks. The Schedule form contains no archive controls.
+
+Run `node --test desk-worker/src/*.test.mjs` from the site root for scheduling and reconciliation rules.
 
 ## Recovery
 
