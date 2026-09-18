@@ -1,0 +1,157 @@
+---
+import AdminLayout from '../../layouts/admin-layout.astro'
+---
+
+<AdminLayout>
+    <main id="episodes">
+        <header>
+            <div><h1>Episodes</h1><p>All audio files hosted in Jetty Radio’s AzuraCast library.</p></div>
+            <button id="episodes-refresh" class="btn btn-outline" disabled>Refresh</button>
+        </header>
+        <div class="filters">
+            <label>Search episodes<input id="episodes-search" type="search" class="input" placeholder="Title, artist, or file path" disabled /></label>
+            <label>Playlist<select id="episodes-playlist" class="select" disabled><option value="">All playlists</option></select></label>
+        </div>
+        <p id="episodes-status" role="status" aria-live="polite">Connecting to AzuraCast…</p>
+        <div class="table-container" tabindex="0" role="region" aria-label="Episode library" hidden>
+            <table class="table">
+                <caption class="sr-only">Episodes hosted in AzuraCast</caption>
+                <thead><tr><th scope="col">Episode / file</th><th scope="col">Artist</th><th scope="col">Duration</th><th scope="col">Playlists</th></tr></thead>
+                <tbody id="episodes-rows"></tbody>
+            </table>
+        </div>
+    </main>
+</AdminLayout>
+
+<script>
+    import { $userStore } from '@clerk/astro/client'
+    import type { AzuraShow as Media } from '../../lib/azuracast/types'
+    import { BASE_URL } from '../../lib/azuracast/constants'
+
+    const root = document.querySelector<HTMLElement>('#episodes')!
+    const search = document.querySelector<HTMLInputElement>('#episodes-search')!
+    const playlist = document.querySelector<HTMLSelectElement>('#episodes-playlist')!
+    const refresh = document.querySelector<HTMLButtonElement>('#episodes-refresh')!
+    const status = document.querySelector<HTMLElement>('#episodes-status')!
+    const rows = document.querySelector<HTMLTableSectionElement>('#episodes-rows')!
+    const table = root.querySelector<HTMLElement>('.table-container')!
+    let files: Media[] = []
+    let sessionId: string | undefined
+    let request: AbortController | undefined
+
+    function render() {
+        const query = search.value.trim().toLowerCase()
+        const visible = files.filter(file =>
+            `${file.title} ${file.artist} ${file.path}`.toLowerCase().includes(query) &&
+            (!playlist.value || file.playlists.some(item => String(item.id) === playlist.value)))
+        const fragment = document.createDocumentFragment()
+        for (const file of visible) {
+            const row = document.createElement('tr')
+            const title = document.createElement('td')
+            const name = document.createElement('span')
+            name.textContent = file.title || file.path.split('/').pop() || 'Untitled episode'
+            const path = document.createElement('small')
+            path.textContent = file.path
+            title.append(name, path)
+            row.append(title)
+            const seconds = Math.round(file.length)
+            const duration = Number.isFinite(seconds) && seconds >= 0
+                ? (seconds >= 3600 ? `${Math.floor(seconds / 3600)}:` : '') +
+                  `${String(Math.floor(seconds / 60) % 60).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
+                : '—'
+            for (const value of [file.artist || '—', duration, file.playlists.map(item => item.name).join(', ') || 'No playlist']) {
+                const cell = document.createElement('td')
+                cell.textContent = value
+                row.append(cell)
+            }
+            fragment.append(row)
+        }
+        rows.replaceChildren(fragment)
+        table.hidden = !visible.length
+        status.textContent = files.length === 0 ? 'No episodes in AzuraCast yet.'
+            : `${visible.length} of ${files.length} episodes${visible.length ? '.' : ' · No episodes match your filters.'}`
+    }
+
+    async function load() {
+        request?.abort()
+        const controller = new AbortController()
+        request = controller
+        refresh.disabled = true
+        search.disabled = true
+        playlist.disabled = true
+        files = []
+        rows.replaceChildren()
+        table.hidden = true
+        status.textContent = 'Loading episodes from AzuraCast…'
+        try {
+            const apiKey = $userStore.get()?.publicMetadata.azuracastApiKey
+            if (typeof apiKey !== 'string' || !apiKey)
+                throw new Error('Your account needs an AzuraCast API key. Ask the station administrator to connect your account.')
+            const response = await fetch(`${BASE_URL}/files`, {
+                headers: { 'X-API-Key': apiKey },
+                signal: controller.signal,
+            })
+            const data = await response.json()
+            if (controller.signal.aborted) return
+            if (!response.ok) throw new Error(data.error || `Could not load episodes (${response.status}).`)
+            if (!Array.isArray(data)) throw new Error('AzuraCast returned an unexpected episode list.')
+            files = (data as Media[]).sort((a, b) => (a.title || a.path).localeCompare(b.title || b.path))
+            const selected = playlist.value
+            const playlists = new Map(files.flatMap(file => file.playlists.map(item => [item.id, item.name] as const)))
+            playlist.replaceChildren(new Option('All playlists', ''))
+            for (const [id, name] of [...playlists].sort((a, b) => a[1].localeCompare(b[1])))
+                playlist.add(new Option(name, String(id)))
+            playlist.value = playlists.has(Number(selected)) ? selected : ''
+            search.disabled = false
+            playlist.disabled = false
+            render()
+        } catch (error) {
+            if (!controller.signal.aborted)
+                status.textContent = error instanceof Error ? `${error.message} Use Refresh to retry.` : 'Could not load episodes. Use Refresh to retry.'
+        } finally {
+            if (!controller.signal.aborted) refresh.disabled = false
+        }
+    }
+
+    search.addEventListener('input', render)
+    playlist.addEventListener('change', render)
+    refresh.addEventListener('click', () => void load())
+    $userStore.subscribe(user => {
+        if (user) {
+            if (sessionId !== user.id) {
+                sessionId = user.id
+                void load()
+            }
+        } else {
+            sessionId = undefined
+            request?.abort()
+            files = []
+            rows.replaceChildren()
+            table.hidden = true
+            refresh.disabled = search.disabled = playlist.disabled = true
+            playlist.replaceChildren(new Option('All playlists', ''))
+            status.textContent = 'Sign in to Jetty Backstage to browse episodes.'
+        }
+    })
+</script>
+
+<style>
+    main{max-width:1260px;margin:32px auto 80px;padding:0 24px;color:#f2f2f2}
+    header{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:28px}
+    h1{font:600 2.5rem Georgia,serif;margin-bottom:12px}
+    header p{color:#ccc}
+    .filters{display:flex;flex-wrap:wrap;gap:20px}
+    label{display:flex;flex-direction:column;gap:8px;flex:1;min-width:220px}
+    input,select{width:100%;background:#f7f5ef;color:#181818;color-scheme:light}
+    input::placeholder{color:#69665f}
+    [role=status]{margin:24px 0;line-height:1.6}
+    .table-container{overflow-x:auto;background:#161616eb;border:1px solid #ffffff36;border-radius:6px}
+    table{width:100%;min-width:650px}
+    th{color:#ccc}th,main :global(td){padding:16px;vertical-align:top}
+    main :global(td:first-child){min-width:240px;max-width:480px;overflow-wrap:anywhere}
+    main :global(td small){display:block;margin-top:6px;color:#bbb}
+    .btn-outline{color:#f2f2f2;border-color:#aaa89f}
+    .btn-outline:hover{color:#172210;background:#c8e6a0}
+    [hidden]{display:none}
+    @media(max-width:520px){main{padding:0 16px}header{align-items:flex-start}h1{font-size:2rem}}
+</style>
