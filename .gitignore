@@ -209,3 +209,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Private DJ contacts: runtime data, never public assets or Git source.
+private/
+.env.*
+!.env.example

@@ -76,13 +76,66 @@ Assets like our favicons, the background image, etc... live here. They'll always
 
 
 ### Making changes
-To make/test changes locally you need to
-1. clone the github repository
-2. intall [Bun](https://bun.com/) (easy instructions on their site)
-3. run `bun run dev` in your terminal while you're in the project folder
-4. go to the link it tells you. The site is running on your computer and any change you make to the code will be reflected here. 
+Install Node.js 22.12 or newer (including npm), clone the repository, then run:
+
+```sh
+npm run setup
+```
+
+This installs the site and Worker dependencies, creates `.env` from `.env.example` only if it is missing, and applies migrations to the local desk database. It preserves existing `.env` values and can be rerun after pulling updates. The site install does not create an npm lockfile; the existing `bun.lock` remains unchanged.
+
+Fill in the Clerk settings in the root `.env` once:
+
+- `PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`: keys for your Clerk development instance.
+- `CLERK_ISSUER` and `CLERK_JWT_KEY`: that same instance's issuer URL and PEM public verification key. Keep the PEM quoted, using `\n` between lines.
+- `CLERK_ALLOWED_USER_IDS`: comma-separated Clerk user IDs allowed to use the desk, including your development account.
+- Keep `PUBLIC_DESK_API_URL=http://localhost:8787` and `ALLOWED_ORIGINS=http://localhost:4321` for the default local setup.
+- `AZURACAST_API_KEY` is optional for desk draft work. Archive/media reads and station operations require a suitable key; with a key configured, station writes affect the live station even though the desk database is local.
+
+Start both servers in one terminal:
+
+```sh
+npm run dev
+```
+
+Open `http://localhost:4321/backstage/desk`. Ctrl+C stops both servers. If you only need the website, use `npm run dev:site`; the Worker can also run separately with `npm run dev --prefix desk-worker`. Restart development after changing `.env`.
+
+`npm run build` remains the production website build. See [the desk README](desk-worker/README.md) for backend checks and deployment details.
 
 Don't want to bother with installing `bun` and `git` and pulling off righteous hacks in your terminal?
 Forget aboout iiiit! I added a `.devcontainer` file here so we can use Github's Codespaces feature, which spins up a whole dev environment in your browser without you doing anything! I'll make a video showing how to do this later, but if you're interested before I get that up, let me know and I can walk you though it!
 > [!WARNING]
 > **Important note:** Everyone gets 60 free hours of Codespace usage per month. That's more than enough for what we'll be doing, but it's important to remember to "stop" your codespace when you're done using it, because otherwise it stays on even after you've closed your browser. 
+
+### DJ directory (`/backstage/djs`)
+
+Backstage now includes a searchable DJ directory with show descriptions, bios,
+pronouns, official slots, cadence, contacts, socials, audio delivery preferences,
+and organizer notes. It defaults to onboarded shows with official slots. Paused,
+pending, canceled, duplicate, and one-off submissions remain available through
+status filters. The directory is a roster snapshot, not a live calendar sync.
+
+The static page contains no DJ records. After Clerk sign-in, it requests
+`GET /api/djs` from `PUBLIC_DESK_API_URL`. The existing Worker verifies the Clerk
+session, issuer, allowed origin, and team user allowlist before reading D1, and
+returns `Cache-Control: no-store`. Signing out clears the page's loaded records.
+
+The imported roster is kept locally in ignored `private/djs.json` and
+`private/djs.sql`. These files contain contact information; do not add them to
+Git or put them in `public/`. The schema migration contains no private records.
+`npm run setup` applies local migrations and imports `private/djs.sql` when it
+exists. This checkout already has the 45 submitted records in its local D1 DB.
+
+To publish the feature, deploy the updated desk Worker, apply its D1 migration,
+and import the roster into the remote database before deploying the frontend.
+Run the following from `desk-worker` using your existing Cloudflare account:
+
+```sh
+npx wrangler d1 migrations apply jettyradio-desk --remote
+npx wrangler d1 execute jettyradio-desk --remote --file ../private/djs.sql
+npm run deploy
+```
+
+Keep the existing Clerk team allowlist configured. The private files are not
+included in a Git clone; transfer them securely when setting up another laptop.
+`bun test` covers roster validation and the directory API's access checks.

@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Deploy Jetty website and desk
 
 on:
   # Trigger the workflow every time you push to the `main` branch
@@ -16,12 +16,17 @@ permissions:
   pages: write
   id-token: write
 
+concurrency:
+  group: jetty-production
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
       PUBLIC_DESK_API_URL: ${{ vars.PUBLIC_DESK_API_URL }}
       AZURACAST_API_KEY: ${{ secrets.AZURACAST_API_KEY }}
+      PUBLIC_DESK_API_URL: ${{ vars.PUBLIC_DESK_API_URL }}
       PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.PUBLIC_CLERK_PUBLISHABLE_KEY }}
     steps:
       - name: Checkout your repository using git
@@ -29,8 +34,42 @@ jobs:
       - name: Install, build, and upload your site
         uses: withastro/action@v5
 
-  deploy:
+  deploy-desk:
     needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: desk-worker
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: desk-worker/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - run: node --test src/*.test.mjs
+      - name: Deploy desk Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLERK_ALLOWED_USER_IDS: ${{ vars.CLERK_ALLOWED_USER_IDS }}
+          PUBLIC_DESK_API_URL: ${{ vars.PUBLIC_DESK_API_URL }}
+        run: |
+          for required in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID CLERK_ALLOWED_USER_IDS PUBLIC_DESK_API_URL; do
+            if [[ -z "${!required//[[:space:]]/}" ]]; then
+              echo "::error::Configure $required in GitHub Actions settings before deploying."
+              exit 1
+            fi
+          done
+          npm run deploy -- --var "CLERK_ALLOWED_USER_IDS:$CLERK_ALLOWED_USER_IDS"
+
+  deploy:
+    needs: [build, deploy-desk]
     runs-on: ubuntu-latest
     environment:
       name: github-pages
