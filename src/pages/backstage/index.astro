@@ -7,9 +7,14 @@ import AdminLayout from '../../layouts/admin-layout.astro'
         <div class="hero-content text-center">
             <div class="max-w-md">
                 <h1 class="text-5xl font-bold">Jetty Backstage</h1>
-                <p class="py-6"><a class="btn btn-accent" href="/backstage/desk">Open Scheduling Desk</a></p>
+                <p class="py-6"><a class="btn btn-outline" href="/backstage/desk">Open Scheduling Desk</a></p>
                 <p><a class="btn btn-outline" href="/backstage/djs">DJs &amp; shows</a></p>
                 <p class="pt-6"><a class="btn btn-outline" href="/backstage/episodes">Browse all episodes</a></p>
+                <p class="pt-6"><a
+                    role="button"
+                    class="btn btn-outline"
+                    href="/backstage/upload-show">Upload Show</a
+                ></p>
                 <div class="py-6">
                     Browse the DJ directory and scheduling desk, or use our <a
                         class="link"
@@ -33,11 +38,6 @@ import AdminLayout from '../../layouts/admin-layout.astro'
                         <li>All your other ideas</li>
                     </ul>
                 </div>
-                <a
-                    role="button"
-                    class="btn btn-accent"
-                    href="/backstage/upload-show">Upload Show</a
-                >
             </div>
         </div>
     </div>
