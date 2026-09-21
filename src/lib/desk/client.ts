@@ -193,7 +193,7 @@ function open(show: Show, action: "schedule" | "archive" = "schedule") {
   $<HTMLSelectElement>("desk-playlist").replaceChildren(new Option("Choose this show’s playlist", ""));
   $<HTMLSelectElement>("desk-directory").replaceChildren(new Option("Choose this show’s folder", ""));
   existingAudio = [];
-  $("desk-existing").removeAttribute("open");
+  selectAudioSource(show.mediaId ? "existing" : "drive");
   $<HTMLInputElement>("desk-audio-search").value = "";
   $<HTMLSelectElement>("desk-reconcile-playlist").replaceChildren(new Option("Find uploaded MP3s first", ""));
   renderExistingAudio();
@@ -213,11 +213,33 @@ function reviewed() {
     (editing?.artUploadName ? !!artworkFile : !!field("art").value)
   );
 }
+function selectAudioSource(source: "drive" | "computer" | "existing") {
+  for (const name of ["drive", "computer", "existing"] as const) {
+    $("desk-source-" + name).setAttribute("aria-pressed", String(name === source));
+    $("desk-source-panel-" + name).hidden = name !== source;
+  }
+  $("desk-file-settings").hidden = source === "existing";
+  $("desk-audio-link-hint").textContent = source === "existing"
+    ? "Optional when using an MP3 already in AzuraCast."
+    : source === "computer" ? "Keep the original episode link for your records, then choose the downloaded MP3 below."
+    : "Google Drive link to the episode MP3.";
+  $(source === "drive" ? "desk-import" : source === "computer" ? "desk-upload" : "desk-use-audio").after($("desk-import-status"));
+}
+for (const source of ["drive", "computer", "existing"] as const)
+  $("desk-source-" + source).addEventListener("click", () => {
+    if (!busy) selectAudioSource(source);
+  });
+function nextAudioStep() {
+  if (!field("dateConfirmed").checked) return "Confirm episode details in step 1, then review the audio.";
+  if (!field("audioReviewed").checked) return "Listen to the MP3, then confirm your audio review to continue to artwork.";
+  if (!episodeProgress()[2]) return "Continue to step 3 to review the artwork.";
+  return "Continue to step 4 to review and schedule the episode.";
+}
 function audioSummary() {
   const saved = state?.shows.find((s) => s.id === editing?.id);
   $("desk-media").textContent =
     saved?.mediaId && saved.audioImportedFrom === field("audio").value
-      ? `Uploaded to AzuraCast: ${saved.mediaPath}. ${saved.status === "archived" ? "Archived." : saved.scheduledAt ? "Scheduled." : "Continue to step 4 to schedule it."}`
+      ? `Uploaded to AzuraCast: ${saved.mediaPath}. ${saved.status === "archived" ? "Archived." : saved.scheduledAt ? "Scheduled." : nextAudioStep()}`
       : field("audio").value.trim()
         ? "Episode audio hasn’t been uploaded yet."
         : "Add the episode MP3 link above to upload.";
@@ -328,7 +350,10 @@ function updateProgress() {
   $("desk-episode-summary").textContent = `${done.slice(0, 3).filter(Boolean).length} of 3 preparation steps complete · ${status(saved || editing!)}`;
   $("desk-ready-summary").textContent = `${field("title").value || "Episode"} · ${field("artist").value || "Artist"}\n${hints[0]}\n${done.slice(0, 3).every(Boolean) ? "Review complete. Check the show’s playlist and folder below." : "Still needed: " + ["confirmed episode details", saved?.mediaId && saved.audioImportedFrom === field("audio").value ? "audio review" : "uploaded and reviewed audio", "reviewed artwork"].filter((_, i) => !done[i]).join(", ") + "."}`;
   $("desk-continue").hidden = activeSection === 4;
-  $("desk-continue").textContent = ["", "Continue to audio →", "Continue to artwork →", "Review & schedule →"][activeSection] || "Continue";
+  $("desk-continue").textContent = ["", "Confirm details & continue to audio →", "Confirm audio review & continue to artwork →", "Confirm artwork & review episode →"][activeSection] || "Continue";
+  $("desk-confirm-description").textContent = ["", "By continuing, you confirm the show details and Pacific air time are correct.", "By continuing, you confirm you’ve listened to the full MP3 and checked its duration, playback, and clipping.", "By continuing, you confirm the artwork shows the correct episode information. The tracklist is optional.", "Scheduling changes the live station. Review the episode and destination before submitting."][activeSection];
+  $("desk-back").hidden = activeSection === 1;
+  $<HTMLButtonElement>("desk-back").disabled = busy;
   $<HTMLButtonElement>("desk-continue").disabled = busy;
   $("desk-schedule").hidden = activeSection !== 4;
 }
@@ -346,6 +371,9 @@ function buttons() {
     row.disabled = busy || row.dataset.unavailable === "true";
   for (const id of [
     "desk-save",
+    "desk-source-drive",
+    "desk-source-computer",
+    "desk-source-existing",
     "desk-connect",
     "desk-import",
     "desk-find-audio",
@@ -365,6 +393,7 @@ function buttons() {
   for (const step of form.querySelectorAll<HTMLFieldSetElement>("fieldset"))
     step.disabled = !!archived;
   $<HTMLButtonElement>("desk-save").disabled = busy || !!archived;
+  $<HTMLButtonElement>("desk-continue").disabled = busy || !!archived;
   const uploaded = !!(
     saved?.mediaId && saved.audioImportedFrom === field("audio").value
   );
@@ -565,8 +594,8 @@ async function attachAudio(
   message(
     "desk-import-status",
     replaced
-      ? "New MP3 attached. Review the replacement audio, then schedule it in step 4. The previous file remains in AzuraCast."
-      : "Episode MP3 uploaded to AzuraCast. Continue to step 4 to schedule it."
+      ? `New MP3 attached. ${nextAudioStep()} The previous file remains in AzuraCast.`
+      : `Episode MP3 uploaded to AzuraCast. ${nextAudioStep()}`
   );
 }
 function renderExistingAudio() {
@@ -643,18 +672,52 @@ $("desk-save").addEventListener(
   "click",
   () =>
     void operation("desk-form-status", async () => {
+      if (artworkFile && !window.confirm("Save and close? Your draft saves the artwork filename, but you’ll need to select the image again when you return.")) {
+        message("desk-form-status", "Kept open. Your selected artwork is still available.");
+        return;
+      }
       await saveEpisode();
       message("desk-form-status", "Draft saved.");
+      dialog.close();
     })
 );
 for (let step = 1; step <= 4; step++) {
   $(`desk-section-${step}`).querySelector("summary")!.addEventListener("click", (event) => {
     event.preventDefault();
-    openSection(step, false);
+    if (!busy) openSection(step, false);
   });
 }
+$("desk-back").addEventListener("click", () => {
+  if (!busy) openSection(Math.max(1, activeSection - 1));
+});
 $("desk-continue").addEventListener("click", () => {
-  if (!busy) openSection(Math.min(4, activeSection + 1));
+  void operation("desk-form-status", async () => {
+    const step = activeSection;
+    const names = step === 1 ? ["title", "artist", "date", "start", "end"]
+      : step === 2 ? ["audio", "uploadName"] : ["art", "tracklist"];
+    for (const name of names) {
+      const input = field(name);
+      if (!input.reportValidity() || (input.required && !input.value.trim())) {
+        input.focus();
+        throw new Error(`Check ${input.closest("label")?.firstChild?.textContent?.trim() || name} before continuing.`);
+      }
+    }
+    if (step === 2 && (!editing?.mediaId || editing.audioImportedFrom !== field("audio").value || replacingAudio))
+      throw new Error("Upload or select the episode MP3 before confirming your audio review.");
+    if (step === 3 && !(editing?.artUploadName ? artworkFile : field("art").value.trim()))
+      throw new Error("Choose an artwork image or add its link before confirming artwork.");
+    const confirmation = field(["", "dateConfirmed", "audioReviewed", "artReviewed"][step]);
+    const previous = confirmation.checked;
+    confirmation.checked = true;
+    try {
+      await saveEpisode();
+    } catch (error) {
+      confirmation.checked = previous;
+      throw error;
+    }
+    openSection(Math.min(4, step + 1));
+    message("desk-form-status", "Confirmed and saved.");
+  });
 });
 form.addEventListener("invalid", (event) => {
   const input = event.target as HTMLElement;
@@ -884,7 +947,7 @@ $("desk-art-drop").addEventListener("drop", (e: DragEvent) => {
   }
   selectArtwork(files[0]);
 });
-for (const name of ["date", "start", "end"])
+for (const name of ["title", "artist", "date", "start", "end"])
   field(name).addEventListener("input", () => {
     field("dateConfirmed").checked = false;
     scheduleApproval = "";
