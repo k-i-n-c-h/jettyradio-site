@@ -23,6 +23,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      desk_configured: ${{ steps.desk-config.outputs.configured }}
     env:
       AZURACAST_API_KEY: ${{ secrets.AZURACAST_API_KEY }}
       PUBLIC_DESK_API_URL: ${{ vars.PUBLIC_DESK_API_URL }}
@@ -30,12 +32,32 @@ jobs:
     steps:
       - name: Checkout your repository using git
         uses: actions/checkout@v5
+      - name: Check desk deployment configuration
+        id: desk-config
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLERK_ALLOWED_USER_IDS: ${{ vars.CLERK_ALLOWED_USER_IDS }}
+        run: |
+          missing=()
+          for required in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID CLERK_ALLOWED_USER_IDS PUBLIC_DESK_API_URL; do
+            if [[ -z "${!required//[[:space:]]/}" ]]; then
+              missing+=("$required")
+            fi
+          done
+          if (( ${#missing[@]} )); then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Skipping desk deployment until these GitHub Actions settings are configured: ${missing[*]}. The website will still deploy."
+            echo "Desk deployment skipped: missing ${missing[*]}. Website deployment can proceed; the existing Worker is unchanged." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install, build, and upload your site
         uses: withastro/action@v5
 
   deploy-desk:
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && needs.build.outputs.desk_configured == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -69,6 +91,13 @@ jobs:
 
   deploy:
     needs: [build, deploy-desk]
+    # Allow the website through only when the Worker succeeded or was intentionally
+    # skipped for missing configuration. Actual deployment failures still block it.
+    if: >-
+      ${{ !cancelled() && github.ref == 'refs/heads/main' &&
+          needs.build.result == 'success' &&
+          (needs.deploy-desk.result == 'success' ||
+           (needs.deploy-desk.result == 'skipped' && needs.build.outputs.desk_configured == 'false')) }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages
