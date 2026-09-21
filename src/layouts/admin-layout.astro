@@ -8,12 +8,13 @@ const { showNavigation = true } = Astro.props
 
 <RootLayout title="Jetty Admin">
     <Show when="signed-in">
-        {showNavigation && <div class="navbar bg-base-100 px-8 w-full">
+        {showNavigation && <div class="navbar bg-base-100 px-4 w-full flex-wrap gap-2">
             <div class="flex-1">
                 <a class="btn btn-ghost" href="/backstage">Jetty Backstage</a>
             </div>
-            <div class="flex-none px-8">
+            <div class="flex-none">
                 <ul class="menu menu-horizontal px-1">
+                    <li><a href="/backstage/djs">DJs &amp; shows</a></li>
                     <li><a href="/backstage/desk">Scheduling Desk</a></li>
                     <li><a href="/backstage/upload-show">Upload Show</a></li>
                     <li><a href="/">Jetty Radio</a></li>

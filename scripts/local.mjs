@@ -32,6 +32,9 @@ if (action === 'setup') {
   run(npm, ['install', '--no-package-lock']);
   run(npm, ['ci'], worker);
   run(process.execPath, ['node_modules/wrangler/bin/wrangler.js', 'd1', 'migrations', 'apply', 'jettyradio-desk', '--local'], worker);
+  if (existsSync(`${root}private/djs.sql`)) {
+    run(process.execPath, ['node_modules/wrangler/bin/wrangler.js', 'd1', 'execute', 'jettyradio-desk', '--local', '--file', '../private/djs.sql'], worker);
+  }
   console.log('\nSetup complete. Fill in the Clerk settings in .env, then run npm run dev.');
 } else if (action === 'dev') {
   const astro = `${root}node_modules/astro/bin/astro.mjs`;

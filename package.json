@@ -22,7 +22,8 @@
     "dev:site": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "test": "bun test"
   },
   "type": "module",
   "devDependencies": {

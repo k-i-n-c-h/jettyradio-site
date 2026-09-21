@@ -1,3 +1,4 @@
+import { getDJDirectory } from "./dj-directory";
 import { readLimited } from "./body";
 import { verifyToken } from "@clerk/backend";
 import { validateShows } from "./validation.mjs";
@@ -68,6 +69,8 @@ export function createHandler(verifySession: Verify = verify) {
       return finish(reply("This account does not have desk access.", 403));
     const path = new URL(request.url).pathname;
     try {
+      if (path === "/api/djs" && request.method === "GET")
+        return finish(await getDJDirectory(env));
       if (path === "/api/desk/seed" && request.method === "POST")
         return finish(await seedWeek(request, env, identity.sub));
       if (path === "/api/desk" && request.method === "GET") {
