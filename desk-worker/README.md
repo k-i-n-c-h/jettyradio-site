@@ -21,7 +21,7 @@ If migrating an existing checkout, move settings from `desk-worker/.dev.vars` in
 
 ## GitHub deployment
 
-The existing `.github/workflows/deploy.yml` builds the site, checks and deploys the Worker, then publishes GitHub Pages. A failed backend deployment prevents publishing the new frontend. Production runs are serialized; only `main` can deploy. Pushes to `main`, the daily rebuild, and manual runs on `main` all use this sequence.
+The existing `.github/workflows/deploy.yml` builds the site, checks and deploys the Worker, then publishes GitHub Pages. Once the required deployment settings are configured, a failed backend deployment prevents publishing the new frontend. Production runs are serialized; only `main` can deploy. Pushes to `main`, the daily rebuild, and manual runs on `main` all use this sequence.
 
 Before merging this workflow, configure repository Settings → Secrets and variables → Actions:
 
@@ -32,7 +32,7 @@ Before merging this workflow, configure repository Settings → Secrets and vari
 | Variable | `CLERK_ALLOWED_USER_IDS` | Comma-separated approved production Clerk user IDs. The workflow overrides the empty checked-in allowlist. |
 | Variable | `PUBLIC_DESK_API_URL` | `https://jettyradio-desk.jettyradio-desk-api.workers.dev` |
 
-Keep the existing website secrets `AZURACAST_API_KEY` and `PUBLIC_CLERK_PUBLISHABLE_KEY`. The Worker's `CLERK_JWT_KEY` and restricted `AZURACAST_API_KEY` remain in Cloudflare; deployments preserve them. Missing deployment settings fail the job without publishing the new website. Database migrations remain an explicit release step; this change adds none. A Pages failure after the Worker deploys does not roll back the Worker.
+Keep the existing website secrets `AZURACAST_API_KEY` and `PUBLIC_CLERK_PUBLISHABLE_KEY`. The Worker's `CLERK_JWT_KEY` and restricted `AZURACAST_API_KEY` remain in Cloudflare; deployments preserve them. Until all four deployment settings are present, the workflow warns and skips the Worker deployment while allowing the website to publish. The existing Worker is unchanged. Adding all four settings automatically enables Worker deployment on the next run; a real Worker deployment failure then blocks website publication. Database migrations remain an explicit release step; this change adds none. A Pages failure after the Worker deploys does not roll back the Worker.
 
 Cloudflare authentication setup: https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/
 
