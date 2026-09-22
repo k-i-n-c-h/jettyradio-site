@@ -5,7 +5,7 @@ import AdminLayout from '../../layouts/admin-layout.astro'
 <AdminLayout>
     <main id="episodes" data-api={import.meta.env.PUBLIC_DESK_API_URL || ''}>
         <header>
-            <div><h1>Episodes</h1><p>All audio files hosted in Jetty Radio’s AzuraCast library.</p></div>
+            <div><p class="eyebrow">𒀭 JETTY BACKSTAGE 𒀭</p><h1>Episodes</h1><p>All audio files hosted in Jetty Radio’s AzuraCast library.</p></div>
             <button id="episodes-refresh" class="btn btn-outline" disabled>Refresh</button>
         </header>
         <div class="filters">
@@ -162,7 +162,8 @@ import AdminLayout from '../../layouts/admin-layout.astro'
 <style>
     main{max-width:1260px;margin:32px auto 80px;padding:0 24px;color:#f2f2f2}
     header{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:28px}
-    h1{font:600 2.5rem Georgia,serif;margin-bottom:12px}
+    h1{font:600 2.5rem var(--backstage-font);margin-bottom:12px}
+    .eyebrow{font-size:.875rem;letter-spacing:.12em;color:#c8e6a0;margin-bottom:8px}
     header p{color:#ccc}
     .filters{display:flex;flex-wrap:wrap;gap:20px}
     label{display:flex;flex-direction:column;gap:8px;flex:1;min-width:220px}

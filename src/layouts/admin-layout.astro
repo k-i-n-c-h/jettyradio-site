@@ -1,42 +1,53 @@
 ---
 import RootLayout from './root-layout.astro'
-import { Show, SignInButton, UserButton } from '@clerk/astro/components'
+import { Show, SignInButton } from '@clerk/astro/components'
+import BackstageNavigation from '../components/backstage-navigation.astro'
+import logo from '../assets/jettyradio2.png'
 
 interface Props { showNavigation?: boolean }
 const { showNavigation = true } = Astro.props
+const isBackstageHome = Astro.url.pathname.replace(/\/$/, '') === '/backstage'
 ---
 
 <RootLayout title="Jetty Admin">
-    <Show when="signed-in">
-        {showNavigation && <div class="navbar bg-base-100 px-4 w-full flex-wrap gap-2">
-            <div class="flex-1">
-                <a class="btn btn-ghost" href="/backstage">Jetty Backstage</a>
-            </div>
-            <div class="flex-none">
-                <ul class="menu menu-horizontal px-1">
-                    <li><a href="/backstage/djs">DJs &amp; shows</a></li>
-                    <li><a href="/backstage/desk">Scheduling Desk</a></li>
-                    <li><a href="/backstage/episodes">Episodes</a></li>
-                    <li><a href="/backstage/upload-show">Upload Show</a></li>
-                    <li><a href="/">Jetty Radio</a></li>
-                </ul>
-            </div>
-            <UserButton />
-        </div>}
-        <slot />
-    </Show>
-    <Show when="signed-out">
-        <div class="hero min-h-screen">
-            <div class="hero-content text-center">
-                <div class="max-w-md">
-                    <h1 class="text-5xl font-bold">Jetty Backstage</h1>
-                    <p class="py-6">
-                        Ohhhhhhhh you found it! Very much under development, be
-                        careful 😘
-                    </p>
-                    <SignInButton mode="modal" class:list="btn btn-primary" />
+    <div class="backstage-shell">
+        <Show when="signed-in">
+            {showNavigation && <header class="backstage-masthead">
+                <a href="/backstage"><img src={logo.src} alt="Jetty Radio" width="220" /></a>
+                <p>Santa Cruz-based internet radio <span aria-hidden="true">𒀭</span> backstage</p>
+            </header>}
+            {showNavigation && !isBackstageHome && <div class="px-4"><BackstageNavigation wide /></div>}
+            <div class="backstage-content"><slot /></div>
+        </Show>
+        <Show when="signed-out">
+            <div class="hero min-h-screen">
+                <div class="hero-content text-center">
+                    <div class="max-w-md">
+                        <h1 class="text-5xl font-bold">Jetty Backstage</h1>
+                        <p class="py-6">
+                            Ohhhhhhhh you found it! Very much under development, be
+                            careful 😘
+                        </p>
+                        <SignInButton mode="modal" class:list="btn btn-primary" />
+                    </div>
                 </div>
             </div>
-        </div>
-    </Show>
+        </Show>
+    </div>
 </RootLayout>
+
+<style>
+    .backstage-masthead{display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px 16px 0;text-align:center;font-family:var(--backstage-font)}
+    .backstage-masthead img{display:block;width:min(220px,70vw);height:auto}
+    .backstage-masthead p{font-size:1rem}
+    .backstage-masthead span{padding:0 5px;color:#c8e6a0}
+</style>
+
+<style is:global>
+    .backstage-shell{--backstage-font:"Courier New",Courier,monospace;font-family:var(--backstage-font)}
+    .backstage-shell button,.backstage-shell input,.backstage-shell select,.backstage-shell textarea{font-family:inherit}
+    .backstage-content h1,.backstage-content h2,.backstage-content h3{font-family:var(--backstage-font)}
+    .backstage-content .btn{border-radius:2px}
+    .backstage-content .input,.backstage-content .select,.backstage-content .textarea,.backstage-content .file-input{border-radius:2px}
+    .backstage-content .desk-panel,.backstage-content .table-container,.backstage-content .dj-record,.backstage-content .notice{border-radius:2px}
+</style>

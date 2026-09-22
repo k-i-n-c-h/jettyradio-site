@@ -12,6 +12,7 @@ const playlists = await getPlaylists()
 </style>
 
 <AdminLayout>
+    <header class="upload-heading"><p>𒀭 JETTY BACKSTAGE 𒀭</p><h1>Upload show</h1><span>Send an episode to the station.</span></header>
     <div class="flex flex-col items-center my-8">
         <form id="upload-form" class="flex flex-col gap-4 w-80">
             <label class="floating-label">
@@ -369,3 +370,10 @@ const playlists = await getPlaylists()
         })
     </script>
 </AdminLayout>
+
+<style>
+    .upload-heading{text-align:center;margin:32px 16px 24px;font-family:var(--backstage-font)}
+    .upload-heading p{color:#c8e6a0;letter-spacing:.12em;font-size:.875rem;margin-bottom:8px}
+    .upload-heading h1{font-size:2.5rem;line-height:1.2;margin-bottom:12px}
+    .upload-heading span{color:#ccc}
+</style>
