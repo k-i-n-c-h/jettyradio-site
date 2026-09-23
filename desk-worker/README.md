@@ -32,7 +32,7 @@ Before merging this workflow, configure repository Settings → Secrets and vari
 | Variable | `CLERK_ALLOWED_USER_IDS` | Comma-separated approved production Clerk user IDs. The workflow overrides the empty checked-in allowlist. |
 | Variable | `PUBLIC_DESK_API_URL` | `https://jettyradio-desk.jettyradio-desk-api.workers.dev` |
 
-Keep the existing website secrets `AZURACAST_API_KEY` and `PUBLIC_CLERK_PUBLISHABLE_KEY`. The Worker's `CLERK_JWT_KEY` and restricted `AZURACAST_API_KEY` remain in Cloudflare; deployments preserve them. Until all four deployment settings are present, the workflow warns and skips the Worker deployment while allowing the website to publish. The existing Worker is unchanged. Adding all four settings automatically enables Worker deployment on the next run; a real Worker deployment failure then blocks website publication. Database migrations remain an explicit release step; this change adds none. A Pages failure after the Worker deploys does not roll back the Worker.
+Keep the existing website secrets `AZURACAST_API_KEY` and `PUBLIC_CLERK_PUBLISHABLE_KEY`. The Worker's `CLERK_JWT_KEY` and restricted `AZURACAST_API_KEY` remain in Cloudflare; deployments preserve them. Until all four deployment settings are present, the workflow warns and skips the Worker deployment while allowing the website to publish. The existing Worker is unchanged. Adding all four settings automatically enables Worker deployment on the next run; a real Worker deployment failure then blocks website publication. Database migrations remain an explicit release step. Apply pending migrations before deploying features that depend on them. A Pages failure after the Worker deploys does not roll back the Worker.
 
 Cloudflare authentication setup: https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/
 
@@ -82,3 +82,9 @@ Run `node --test desk-worker/src/*.test.mjs` from the site root for scheduling a
 ## Recovery
 
 Keep the existing hosted desk available until the website replacement is verified. For a backend regression, use Cloudflare's deployment rollback and inspect D1 before changing data. Back up D1 before destructive migrations. To stop station writes, remove/revoke the restricted AzuraCast key. To close all desk access, clear `CLERK_ALLOWED_USER_IDS` and deploy.
+
+## Episode genre tags
+
+The Episodes table edits title, artist, air date, and tracklist / notes in AzuraCast. The air-date picker writes the existing `air_date` custom field in MM/DD/YYYY format, preserving other custom fields; leaving the date unchanged preserves its stored value. Genre tags live in D1: `episode_tag_bank` holds reusable names and `episode_tags` links multiple tags to each AzuraCast media ID and path. The bank starts empty; staff can use the plus button beside an episode to open its details form, choose from the shared bank, or create genres. Names are normalized to lowercase, limited to 40 characters, and each episode supports up to 20 tags. Removing a tag from an episode keeps it in the bank. Genre filtering is integrated into the search bar and matches every selected tag and combines with search and playlist filters. “Untagged only” clears selected tags; selecting a genre turns that option off.
+
+Apply `0003_episode_tags.sql` before releasing this feature (`npx wrangler d1 migrations apply jettyradio-desk --local` for development; use `--remote` only for an approved production release). Episode details and tags span two services: if details save but the tag write fails, the editor reports this and retains the draft for retry.
