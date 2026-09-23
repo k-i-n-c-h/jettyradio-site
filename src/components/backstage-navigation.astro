@@ -1,0 +1,32 @@
+---
+import { UserButton } from '@clerk/astro/components'
+interface Props { wide?: boolean }
+const { wide = false } = Astro.props
+---
+
+<nav class:list={['backstage-navigation', { wide }]} aria-label="Jetty navigation">
+    <h2>𒀭 Jetty navigation 𒀭</h2>
+    <a class="link" href="/backstage">Backstage home</a>
+    <a class="link" href="/backstage/djs">DJs &amp; shows</a>
+    <a class="link" href="/backstage/desk">Scheduling Desk</a>
+    <a class="link" href="/backstage/episodes">Episodes</a>
+    <a class="link" href="/backstage/upload-show">Upload show</a>
+    <a class="link" href="/">Jetty Radio</a>
+    <a class="link" href="/archive">Episode archive</a>
+    <a class="link" href="/schedule">Show schedule</a>
+    <div class="account"><span>Account</span><UserButton /></div>
+</nav>
+
+<style>
+    .backstage-navigation{height:fit-content;min-width:0;background:#0e0e0edb;border:1px solid #aaa;padding:24px;color:#f2f2f2;font-family:var(--backstage-font)}
+    h2{font:600 1.15rem var(--backstage-font);text-align:center;white-space:nowrap}
+    a{display:block;margin:14px 0;font-size:1.1rem;text-decoration:underline;text-underline-offset:3px}
+    a::before{content:'𒀭';color:#c8e6a0;margin-right:8px;text-decoration:none;display:inline-block}
+    a:hover{color:#c8e6a0}
+    a:focus-visible{outline:2px solid #c8e6a0;outline-offset:3px}
+    .account{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:16px;margin-top:20px;border-top:1px solid #ffffff36;color:#ccc}
+    .wide{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 20px;max-width:1260px;margin:24px auto 0}
+    .wide h2,.wide .account{grid-column:1/-1}
+    @media(max-width:700px){.wide{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:520px){.backstage-navigation{padding:18px}h2{white-space:normal}}
+</style>
