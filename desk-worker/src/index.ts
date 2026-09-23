@@ -1,3 +1,4 @@
+import { episodeTags, updateEpisode } from "./episodes";
 import { getDJDirectory } from "./dj-directory";
 import { readLimited } from "./body";
 import { verifyToken } from "@clerk/backend";
@@ -69,6 +70,11 @@ export function createHandler(verifySession: Verify = verify) {
       return finish(reply("This account does not have desk access.", 403));
     const path = new URL(request.url).pathname;
     try {
+      if (path === "/api/episode-tags" && ["GET", "POST"].includes(request.method))
+        return finish(await episodeTags(request, env));
+      const episode = path.match(/^\/api\/episodes\/([1-9]\d*)$/);
+      if (episode && request.method === "PUT" && Number.isSafeInteger(Number(episode[1])))
+        return finish(await updateEpisode(request, env, Number(episode[1])));
       if (path === "/api/djs" && request.method === "GET")
         return finish(await getDJDirectory(env));
       if (path === "/api/desk/seed" && request.method === "POST")

@@ -31,6 +31,8 @@ export async function station(request: Request, env: Env) {
           id: f.id,
           title: f.title,
           artist: f.artist,
+          lyrics: f.lyrics || "",
+          custom_fields: { air_date: f.custom_fields?.air_date || "" },
           path: f.path,
           length: f.length,
           playlists: f.playlists,

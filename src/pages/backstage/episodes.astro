@@ -8,16 +8,35 @@ import AdminLayout from '../../layouts/admin-layout.astro'
             <div><p class="eyebrow">𒀭 JETTY BACKSTAGE 𒀭</p><h1>Episodes</h1><p>All audio files hosted in Jetty Radio’s AzuraCast library.</p></div>
             <button id="episodes-refresh" class="btn btn-outline" disabled>Refresh</button>
         </header>
-        <div class="filters">
-            <label>Search episodes<input id="episodes-search" type="search" class="input" placeholder="Title, artist, or file path" disabled /></label>
-            <label>Playlist<select id="episodes-playlist" class="select" disabled><option value="">All playlists</option></select></label>
+        <div class="search-shell">
+            <div class="search-bar">
+                <label class="sr-only" for="episodes-search">Search episodes</label>
+                <input id="episodes-search" type="search" placeholder="Search episodes, artists, or tags…" disabled />
+                <label class="sr-only" for="episodes-playlist">Playlist</label>
+                <select id="episodes-playlist" aria-label="Playlist" disabled><option value="">All playlists</option></select>
+                <details id="tag-filter-menu">
+                    <summary>Tags <span id="tag-filter-count"></span><span aria-hidden="true">⌄</span></summary>
+                    <fieldset id="episodes-tags" class="genre-filter" disabled aria-describedby="genre-filter-help">
+                        <legend class="sr-only">Filter by genre tags</legend>
+                        <label class="sr-only" for="genre-filter-search">Find a tag</label>
+                        <input id="genre-filter-search" type="search" class="input" placeholder="Find a tag…" autocomplete="off" />
+                        <p id="genre-filter-help">Episodes must match every selected tag.</p>
+                        <div id="genre-filter-options" class="tag-options"></div>
+                        <div class="genre-filter-actions">
+                            <label class="untagged-choice"><input id="episodes-untagged" type="checkbox" />Untagged only</label>
+                            <button id="genres-clear" type="button" class="btn btn-outline btn-sm">Clear</button>
+                        </div>
+                    </fieldset>
+                </details>
+            </div>
+            <div id="selected-tag-filters" class="tag-list" aria-label="Selected genre filters" hidden></div>
         </div>
         <p id="episodes-status" role="status" aria-live="polite">Connecting to AzuraCast…</p>
         <div class="table-container" tabindex="0" role="region" aria-label="Episode library" hidden>
             <table class="table">
                 <caption class="sr-only">Episodes hosted in AzuraCast</caption>
                 <thead><tr>
-                    {['Song name', 'File path', 'Artist', 'Duration', 'Playlists'].map((label, index) => (
+                    {['Song name', 'File path', 'Artist', 'Duration', 'Playlists', 'Tags'].map((label, index) => (
                         <th scope="col" aria-sort={index === 0 ? 'ascending' : 'none'}><button type="button" data-sort={index}>{label}<span aria-hidden="true">{index === 0 ? ' ↑' : ' ↕'}</span></button></th>
                     ))}
                 </tr></thead>
@@ -29,8 +48,9 @@ import AdminLayout from '../../layouts/admin-layout.astro'
 
 <script>
     import { $sessionStore } from '@clerk/astro/client'
-    import type { AzuraShow as Media } from '../../lib/azuracast/types'
+    import type { AzuraShow } from '../../lib/azuracast/types'
 
+    type Media = AzuraShow & { tags: string[] }
     const root = document.querySelector<HTMLElement>('#episodes')!
     const search = document.querySelector<HTMLInputElement>('#episodes-search')!
     const playlist = document.querySelector<HTMLSelectElement>('#episodes-playlist')!
@@ -38,7 +58,186 @@ import AdminLayout from '../../layouts/admin-layout.astro'
     const status = document.querySelector<HTMLElement>('#episodes-status')!
     const rows = document.querySelector<HTMLTableSectionElement>('#episodes-rows')!
     const table = root.querySelector<HTMLElement>('.table-container')!
+    const tagFilter = document.querySelector<HTMLFieldSetElement>('#episodes-tags')!
+    const tagSearch = document.querySelector<HTMLInputElement>('#genre-filter-search')!
+    const untagged = document.querySelector<HTMLInputElement>('#episodes-untagged')!
+    const selectedTags = new Set<string>()
+    let bank: string[] = []
+    let editing: number | undefined
+    let saving = false
     let files: Media[] = []
+
+    async function api(path: string, method: string, body?: unknown, signal?: AbortSignal) {
+        const token = await $sessionStore.get()?.getToken()
+        if (!token) throw new Error('Sign in to Jetty Backstage to edit episodes.')
+        const response = await fetch(new URL(path, root.dataset.api), {
+            method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: body === undefined ? undefined : JSON.stringify(body), signal,
+        })
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error || 'Could not save changes.')
+        return data
+    }
+
+    function renderTagFilters() {
+        bank.sort((a, b) => a.localeCompare(b))
+        for (const name of selectedTags) if (!bank.includes(name)) selectedTags.delete(name)
+        const options = document.querySelector('#genre-filter-options')!
+        const matchingTags = bank.filter(name => name.includes(tagSearch.value.trim().toLowerCase()))
+        options.replaceChildren(...matchingTags.map(name => {
+            const label = document.createElement('label')
+            label.className = 'tag-choice'
+            const input = document.createElement('input')
+            input.type = 'checkbox'
+            input.checked = selectedTags.has(name)
+            input.addEventListener('change', () => {
+                if (!discardEdits()) { input.checked = selectedTags.has(name); return }
+                if (input.checked) { selectedTags.add(name); untagged.checked = false }
+                else selectedTags.delete(name)
+                render()
+            })
+            label.append(input, document.createTextNode(name))
+            return label
+        }))
+        if (!bank.length) options.textContent = 'No genres yet. Open an episode’s details to create one.'
+        else if (!matchingTags.length) options.textContent = 'No matching tags.'
+    }
+
+    function renderSelectedTags() {
+        const list = document.querySelector<HTMLElement>('#selected-tag-filters')!
+        const names = untagged.checked ? ['Untagged only'] : [...selectedTags]
+        document.querySelector('#tag-filter-count')!.textContent = names.length ? `(${names.length})` : ''
+        list.hidden = !names.length
+        list.replaceChildren(...names.map(name => {
+            const chip = document.createElement('button')
+            chip.type = 'button'
+            chip.className = 'genre-tag'
+            chip.textContent = `${name} ×`
+            chip.setAttribute('aria-label', `Remove ${name} filter`)
+            chip.disabled = tagFilter.disabled || saving
+            chip.addEventListener('click', () => {
+                if (!discardEdits()) return
+                if (untagged.checked) untagged.checked = false
+                else selectedTags.delete(name)
+                renderTagFilters()
+                render()
+                search.focus()
+            })
+            return chip
+        }))
+    }
+
+    function editor(file: Media) {
+        const row = document.createElement('tr')
+        const cell = document.createElement('td')
+        cell.colSpan = 6
+        row.append(cell)
+        const form = document.createElement('form')
+        form.className = 'episode-editor'
+        form.id = `episode-editor-${file.id}`
+        form.setAttribute('aria-label', `Edit episode details: ${songName(file)}`)
+        form.innerHTML = `<h2>Edit episode details</h2><div class="editor-fields"><label>Title<input name="title" class="input" maxlength="255" required></label><label>Artist<input name="artist" class="input" maxlength="255"></label><label>Air date<input name="airDate" type="date" class="input" min="0001-01-01" max="9999-12-31"></label></div><label>Tracklist / notes<textarea name="lyrics" class="textarea" maxlength="20000" rows="4"></textarea></label><fieldset><legend>Genre tags · choose up to 20</legend><div class="episode-selected-tags tag-list"></div><details class="genre-picker"><summary>Add a genre tag <span aria-hidden="true">⌄</span></summary><div class="genre-picker-panel"><label>Find or create a genre tag<input name="newTag" type="search" class="input" maxlength="40" placeholder="Search genres…" autocomplete="off"></label><div class="tag-options"></div><button type="button" class="btn btn-outline add-tag" hidden>Create tag</button></div></details></fieldset><p class="editor-status" role="status"></p><div class="editor-actions"><button class="btn btn-primary" type="submit">Save episode</button><button class="btn btn-outline cancel" type="button">Cancel</button></div>`
+        cell.append(form)
+        for (const name of ['title', 'artist', 'lyrics'] as const)
+            (form.elements.namedItem(name) as HTMLInputElement).value = file[name] || ''
+        const airDate = form.elements.namedItem('airDate') as HTMLInputElement
+        const storedDate = file.custom_fields?.air_date?.trim() || ''
+        const dateParts = storedDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+        airDate.value = dateParts ? `${dateParts[3]}-${dateParts[1].padStart(2, '0')}-${dateParts[2].padStart(2, '0')}` : storedDate
+        const originalDate = airDate.value
+        const selected = new Set(file.tags)
+        const options = form.querySelector('.tag-options')!
+        const message = form.querySelector<HTMLElement>('.editor-status')!
+        const newTag = form.elements.namedItem('newTag') as HTMLInputElement
+        const createTag = form.querySelector<HTMLButtonElement>('.add-tag')!
+        const picker = form.querySelector<HTMLDetailsElement>('.genre-picker')!
+        const selectedList = form.querySelector('.episode-selected-tags')!
+        const normalizeTag = () => newTag.value.normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase()
+        function drawSelected() {
+            selectedList.replaceChildren(...[...selected].sort().map(name => {
+                const chip = document.createElement('button')
+                chip.type = 'button'
+                chip.className = 'genre-tag'
+                chip.textContent = `${name} ×`
+                chip.setAttribute('aria-label', `Remove ${name} from episode`)
+                chip.addEventListener('click', () => { selected.delete(name); drawOptions(); newTag.focus() })
+                return chip
+            }))
+            if (!selected.size) selectedList.textContent = 'No tags selected.'
+        }
+        function drawOptions() {
+            const query = normalizeTag()
+            const available = [...new Set([...bank, ...selected])].sort()
+            const matching = available.filter(name => name.includes(query))
+            createTag.hidden = !query || available.includes(query)
+            createTag.textContent = `Create “${query}”`
+            options.replaceChildren(...matching.map(name => {
+                const label = document.createElement('label')
+                label.className = 'tag-choice'
+                const input = document.createElement('input')
+                input.type = 'checkbox'
+                input.checked = selected.has(name)
+                input.addEventListener('change', () => {
+                    if (input.checked && selected.size >= 20) {
+                        input.checked = false
+                        message.textContent = 'Choose up to 20 tags per episode.'
+                    } else if (input.checked) selected.add(name)
+                    else selected.delete(name)
+                    drawSelected()
+                })
+                label.append(input, document.createTextNode(name))
+                return label
+            }))
+            if (!matching.length) options.textContent = query ? 'No matching genres. Create this tag below.' : 'Your shared genre bank is empty. Type to create a tag.'
+            drawSelected()
+        }
+        newTag.addEventListener('input', drawOptions)
+        picker.addEventListener('toggle', () => { if (picker.open) newTag.focus() })
+        picker.addEventListener('keydown', event => {
+            if (event.key === 'Escape') { picker.open = false; picker.querySelector('summary')!.focus() }
+        })
+        function addTag() {
+            const name = newTag.value.normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase()
+            if (!name || name.length > 40 || /[\x00-\x1f\x7f]/.test(name)) { message.textContent = 'Enter a genre name of 1–40 printable characters.'; return }
+            if (!selected.has(name) && selected.size >= 20) { message.textContent = 'Choose up to 20 tags per episode.'; return }
+            selected.add(name)
+            newTag.value = ''
+            message.textContent = 'New tags join the shared bank when you save.'
+            drawOptions()
+        }
+        drawOptions()
+        form.querySelector('.add-tag')!.addEventListener('click', addTag)
+        newTag.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); addTag() } })
+        form.querySelector('.cancel')!.addEventListener('click', () => { editing = undefined; render(); rows.querySelector<HTMLButtonElement>(`[data-edit="${file.id}"]`)?.focus() })
+        form.addEventListener('submit', async event => {
+            event.preventDefault()
+            saving = true
+            root.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement | HTMLTextAreaElement>('input,select,button,textarea').forEach(control => control.disabled = true)
+            message.textContent = 'Saving episode…'
+            const currentSession = sessionId
+            try {
+                const data = await api(`/api/episodes/${file.id}`, 'PUT', {
+                    path: file.path, title: (form.elements.namedItem('title') as HTMLInputElement).value,
+                    artist: (form.elements.namedItem('artist') as HTMLInputElement).value,
+                    lyrics: (form.elements.namedItem('lyrics') as HTMLTextAreaElement).value, tags: [...selected],
+                    ...(airDate.value === originalDate ? {} : { airDate: airDate.value }),
+                })
+                if (sessionId !== currentSession) return
+                Object.assign(file, data)
+                bank = [...new Set([...bank, ...data.tags])]
+                editing = undefined
+                renderTagFilters()
+                render()
+                status.textContent += ' Episode saved.'
+                rows.querySelector<HTMLButtonElement>(`[data-edit="${file.id}"]`)?.focus()
+            } catch (error) { message.textContent = error instanceof Error ? error.message : 'Could not save episode.' }
+            finally {
+                saving = false
+                if (sessionId === currentSession) root.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLButtonElement | HTMLTextAreaElement>('input,select,button,textarea').forEach(control => control.disabled = false)
+            }
+        })
+        return row
+    }
     let sessionId: string | undefined
     let request: AbortController | undefined
 
@@ -46,14 +245,16 @@ import AdminLayout from '../../layouts/admin-layout.astro'
     let sortDirection = 1
     const songName = (file: Media) => file.title || file.path.split('/').pop() || 'Untitled episode'
     const playlistNames = (file: Media) => file.playlists.map(item => item.name).join(', ') || 'No playlist'
-    const sortValue = (file: Media): string | number => [songName(file), file.path, file.artist || '—', Number.isFinite(file.length) ? file.length : -1, playlistNames(file)][sortColumn]
+    const sortValue = (file: Media): string | number => [songName(file), file.path, file.artist || '—', Number.isFinite(file.length) ? file.length : -1, playlistNames(file), file.tags.join(', ')][sortColumn]
     const sortButtons = root.querySelectorAll<HTMLButtonElement>('[data-sort]')
 
     function render() {
+        renderSelectedTags()
         const query = search.value.trim().toLowerCase()
         const visible = files.filter(file =>
-            `${file.title} ${file.artist} ${file.path}`.toLowerCase().includes(query) &&
-            (!playlist.value || file.playlists.some(item => String(item.id) === playlist.value))).sort((a, b) => {
+            `${file.title} ${file.artist} ${file.path} ${file.tags.join(" ")}`.toLowerCase().includes(query) &&
+            (!playlist.value || file.playlists.some(item => String(item.id) === playlist.value)) &&
+            (untagged.checked ? !file.tags.length : [...selectedTags].every(tag => file.tags.includes(tag)))).sort((a, b) => {
                 const left = sortValue(a), right = sortValue(b)
                 const comparison = typeof left === 'number' && typeof right === 'number'
                     ? left - right : String(left).localeCompare(String(right), undefined, { numeric: true, sensitivity: 'base' })
@@ -72,7 +273,48 @@ import AdminLayout from '../../layouts/admin-layout.astro'
                 cell.textContent = value
                 row.append(cell)
             }
+            const tags = document.createElement('td')
+            const tagList = document.createElement('div')
+            tagList.className = 'tag-list'
+            for (const name of file.tags) {
+                const chip = document.createElement('span')
+                chip.className = 'genre-tag'
+                chip.textContent = name
+                tagList.append(chip)
+            }
+            if (!file.tags.length) tagList.textContent = '—'
+            tags.append(tagList)
+            const edit = document.createElement('button')
+            edit.type = 'button'
+            edit.className = 'episode-expand'
+            edit.textContent = editing === file.id ? '−' : '+'
+            edit.title = 'Edit episode details'
+            edit.setAttribute('aria-controls', `episode-editor-${file.id}`)
+            edit.dataset.edit = String(file.id)
+            edit.setAttribute('aria-label', `Edit episode details: ${songName(file)}`)
+            edit.setAttribute('aria-expanded', String(editing === file.id))
+            edit.addEventListener('click', () => {
+                if (editing === file.id) {
+                    if (!discardEdits()) return
+                    render()
+                    rows.querySelector<HTMLButtonElement>(`[data-edit="${file.id}"]`)?.focus()
+                    return
+                }
+                if (editing !== undefined && !confirm('Discard unsaved episode edits?')) return
+                editing = file.id
+                render()
+                rows.querySelector<HTMLInputElement>('.episode-editor input')?.focus()
+            })
+            const title = row.firstElementChild!
+            const titleContent = document.createElement('div')
+            titleContent.className = 'episode-title'
+            const name = document.createElement('span')
+            name.textContent = title.textContent
+            titleContent.append(edit, name)
+            title.replaceChildren(titleContent)
+            row.append(tags)
             fragment.append(row)
+            if (editing === file.id) fragment.append(editor(file))
         }
         rows.replaceChildren(fragment)
         table.hidden = !visible.length
@@ -81,12 +323,15 @@ import AdminLayout from '../../layouts/admin-layout.astro'
     }
 
     async function load() {
+        if (saving) return
+        if (editing !== undefined && !confirm('Discard unsaved episode edits?')) return
+        editing = undefined
         request?.abort()
         const controller = new AbortController()
         request = controller
         refresh.disabled = true
         search.disabled = true
-        playlist.disabled = true
+        playlist.disabled = tagFilter.disabled = true
         files = []
         rows.replaceChildren()
         table.hidden = true
@@ -108,7 +353,11 @@ import AdminLayout from '../../layouts/admin-layout.astro'
             if (!response.ok) throw new Error(data.error || `Could not load episodes (${response.status}).`)
             if (!data.connected) throw new Error('The AzuraCast station connection is not configured.')
             if (!Array.isArray(data.files)) throw new Error('AzuraCast returned an unexpected episode list.')
-            files = data.files as Media[]
+            const tagData = await api('/api/episode-tags', 'GET', undefined, controller.signal)
+            if (controller.signal.aborted) return
+            bank = tagData.tags
+            files = data.files.map((file: AzuraShow) => ({ ...file, tags: tagData.assignments.filter((item: { media_id: number; media_path: string }) => item.media_id === file.id && item.media_path === file.path).map((item: { tag: string }) => item.tag) }))
+            renderTagFilters()
             const selected = playlist.value
             const playlists = new Map(files.flatMap(file => file.playlists.map(item => [item.id, item.name] as const)))
             playlist.replaceChildren(new Option('All playlists', ''))
@@ -116,7 +365,7 @@ import AdminLayout from '../../layouts/admin-layout.astro'
                 playlist.add(new Option(name, String(id)))
             playlist.value = playlists.has(Number(selected)) ? selected : ''
             search.disabled = false
-            playlist.disabled = false
+            playlist.disabled = tagFilter.disabled = false
             render()
         } catch (error) {
             if (!controller.signal.aborted)
@@ -126,7 +375,43 @@ import AdminLayout from '../../layouts/admin-layout.astro'
         }
     }
 
+    function discardEdits() {
+        if (editing === undefined) return true
+        if (!confirm('Discard unsaved episode edits?')) return false
+        editing = undefined
+        return true
+    }
+    for (const control of [search, playlist]) {
+        control.addEventListener('focus', () => {
+            if (!discardEdits()) { rows.querySelector<HTMLInputElement>('.episode-editor input')?.focus(); return }
+            render()
+        })
+    }
+    tagSearch.addEventListener('input', renderTagFilters)
+    const tagMenu = document.querySelector<HTMLDetailsElement>('#tag-filter-menu')!
+    tagMenu.addEventListener('toggle', () => { if (tagMenu.open) tagSearch.focus() })
+    document.addEventListener('click', event => {
+        if (event.target instanceof Node && !tagMenu.contains(event.target)) tagMenu.open = false
+    })
+    tagMenu.addEventListener('keydown', event => {
+        if (event.key === 'Escape') { tagMenu.open = false; tagMenu.querySelector('summary')!.focus() }
+    })
+    window.addEventListener('beforeunload', event => { if (editing !== undefined || saving) event.preventDefault() })
+    untagged.addEventListener('change', () => {
+        if (!discardEdits()) { untagged.checked = !untagged.checked; return }
+        if (untagged.checked) selectedTags.clear()
+        renderTagFilters()
+        render()
+    })
+    document.querySelector('#genres-clear')!.addEventListener('click', () => {
+        if (!discardEdits()) return
+        selectedTags.clear()
+        untagged.checked = false
+        renderTagFilters()
+        render()
+    })
     for (const button of sortButtons) button.addEventListener('click', () => {
+        if (!discardEdits()) return
         const column = Number(button.dataset.sort)
         sortDirection = sortColumn === column ? -sortDirection : 1
         sortColumn = column
@@ -148,11 +433,17 @@ import AdminLayout from '../../layouts/admin-layout.astro'
             }
         } else {
             sessionId = undefined
+            editing = undefined
+            bank = []
+            selectedTags.clear()
+            untagged.checked = false
+            renderTagFilters()
+            renderSelectedTags()
             request?.abort()
             files = []
             rows.replaceChildren()
             table.hidden = true
-            refresh.disabled = search.disabled = playlist.disabled = true
+            refresh.disabled = search.disabled = playlist.disabled = tagFilter.disabled = true
             playlist.replaceChildren(new Option('All playlists', ''))
             status.textContent = 'Sign in to Jetty Backstage to browse episodes.'
         }
@@ -165,7 +456,28 @@ import AdminLayout from '../../layouts/admin-layout.astro'
     h1{font:600 2.5rem var(--backstage-font);margin-bottom:12px}
     .eyebrow{font-size:.875rem;letter-spacing:.12em;color:#c8e6a0;margin-bottom:8px}
     header p{color:#ccc}
-    .filters{display:flex;flex-wrap:wrap;gap:20px}
+    .search-shell{border:1px solid #aaa89f;border-radius:2px;background:#f7f5ef;color:#181818}
+    .search-bar{display:flex;align-items:center;min-height:48px;gap:8px;padding:4px 12px}
+    #episodes-search{flex:1;min-width:120px;border:0;outline-offset:2px;padding:8px 0;background:transparent}
+    #episodes-playlist{width:auto;max-width:200px;border:0;border-left:1px solid #aaa89f;padding:8px 12px;background:transparent}
+    #tag-filter-menu{position:relative;flex-shrink:0}
+    #tag-filter-menu summary{display:flex;align-items:center;gap:8px;padding:8px;cursor:pointer;list-style:none}
+    #tag-filter-menu summary::-webkit-details-marker{display:none}
+    #tag-filter-menu[open] summary{background:#c8e6a0}
+    #selected-tag-filters{padding:0 12px 12px}
+    #selected-tag-filters :global(.genre-tag){background:#c8e6a0;color:#172210;cursor:pointer;border-color:#899e6f}
+    main :global(.episode-title){display:flex;align-items:flex-start;gap:12px}
+    main :global(.episode-expand){width:26px;height:26px;flex-shrink:0;border:1px solid #c8e6a066;color:#c8e6a0;font-size:1.25rem;line-height:1;cursor:pointer}
+    main :global(.episode-expand:hover){background:#c8e6a0;color:#172210}
+    main :global(.episode-expand:focus-visible){outline:2px solid #c8e6a0;outline-offset:3px}
+    main :global(.genre-picker){margin-top:12px;max-width:460px}
+    main :global(.genre-picker summary){display:flex;justify-content:space-between;gap:16px;padding:10px 12px;border:1px solid #aaa89f;cursor:pointer;color:#c8e6a0;list-style:none}
+    main :global(.genre-picker summary::-webkit-details-marker){display:none}
+    main :global(.genre-picker-panel){display:grid;gap:14px;padding:16px;border:1px solid #aaa89f;border-top:0;background:#161616}
+    main :global(.genre-picker .tag-options){flex-direction:column;max-height:180px;overflow-y:auto}
+    main :global(.genre-picker .tag-choice){padding:8px 10px;gap:10px}
+    main :global(.episode-selected-tags button){cursor:pointer}
+    main :global(.episode-editor h2){font-size:1.1rem;color:#c8e6a0}
     label{display:flex;flex-direction:column;gap:8px;flex:1;min-width:220px}
     input,select{width:100%;background:#f7f5ef;color:#181818;color-scheme:light}
     input::placeholder{color:#69665f}
@@ -180,6 +492,32 @@ import AdminLayout from '../../layouts/admin-layout.astro'
     th button:focus-visible{outline:2px solid #c8e6a0;outline-offset:4px}
     .btn-outline{color:#f2f2f2;border-color:#aaa89f}
     .btn-outline:hover{color:#172210;background:#c8e6a0}
+    .genre-filter{position:absolute;right:0;top:calc(100% + 8px);z-index:10;width:min(380px,calc(100vw - 64px));max-height:360px;overflow:auto;border:1px solid #aaa89f;padding:16px;background:#161616;color:#f2f2f2;box-shadow:0 8px 24px #0006}
+    .genre-filter legend{padding:0 6px;margin:0}
+    #genre-filter-help{color:#ccc;font-size:.875rem;margin:12px 0}
+    #genre-filter-search{min-width:0}
+    #genre-filter-options{flex-direction:column;max-height:190px;overflow-y:auto}
+    #genre-filter-options :global(.tag-choice){padding:8px 10px;gap:10px}
+    .genre-filter-actions{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-top:16px}
+    .untagged-choice{flex:0 1 auto;flex-direction:row;align-items:center;min-width:0}
+    .untagged-choice input{width:16px;height:16px;accent-color:#c8e6a0}
+    main :global(.tag-choice:has(input:checked)){background:#c8e6a0;color:#172210;border-color:#c8e6a0}
+    main :global(.tag-choice:focus-within){outline:2px solid #c8e6a0;outline-offset:3px}
+    .genre-filter:disabled{opacity:.5}
+    main :global(.tag-list),main :global(.tag-options){display:flex;flex-wrap:wrap;gap:8px}
+    main :global(.genre-tag),main :global(.tag-choice){background:#c8e6a014;color:#c8e6a0;border:1px solid #c8e6a066;padding:4px 10px;font-size:.85rem;overflow-wrap:anywhere}
+    main :global(.episode-editor){display:grid;gap:18px;padding:8px;min-width:550px}
+    main :global(.editor-fields){flex-wrap:wrap}
+    main :global(.editor-fields),main :global(.new-tag),main :global(.editor-actions){display:flex;gap:16px;align-items:end}
+    main :global(.episode-editor label){display:flex;flex:1;flex-direction:column;gap:8px}
+    main :global(.episode-editor input:not([type=checkbox])),main :global(textarea){width:100%;background:#f7f5ef;color:#181818;color-scheme:light}
+    main :global(.tag-choice){flex:0 1 auto!important;flex-direction:row!important;align-items:center;cursor:pointer;min-width:0}
+    main :global(.tag-choice input){width:16px;height:16px;accent-color:#c8e6a0}
+    main :global(legend){margin-bottom:12px;color:#ccc}
+    main :global(.editor-status){margin:0;color:#c8e6a0}
+    main :global(.btn-primary){background:#c8e6a0;color:#172210;border-color:#c8e6a0}
+    main :global(.btn-outline){color:#f2f2f2;border-color:#aaa89f}
+    main :global(.btn-outline:hover){color:#172210;background:#c8e6a0}
     [hidden]{display:none}
-    @media(max-width:520px){main{padding:0 16px}header{align-items:flex-start}h1{font-size:2rem}}
+    @media(max-width:520px){.search-bar{flex-wrap:wrap}#episodes-search{flex-basis:100%}#episodes-playlist{flex:1;max-width:none;border-left:0;padding-left:0}main{padding:0 16px}header{align-items:flex-start}h1{font-size:2rem}}
 </style>
