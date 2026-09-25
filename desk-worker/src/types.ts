@@ -5,4 +5,5 @@ export interface Env {
   CLERK_ALLOWED_USER_IDS: string;
   ALLOWED_ORIGINS: string;
   AZURACAST_API_KEY: string;
+  SUBMISSIONS_WEBHOOK_SECRET?: string;
 }

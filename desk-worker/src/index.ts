@@ -1,4 +1,5 @@
 import { episodeTags, updateEpisode } from "./episodes";
+import { receiveSubmission, listSubmissions, reviewSubmission } from "./submissions";
 import { getDJDirectory } from "./dj-directory";
 import { readLimited } from "./body";
 import { verifyToken } from "@clerk/backend";
@@ -27,6 +28,14 @@ const verify: Verify = (token, env, origins) =>
   verifyToken(token, { jwtKey: env.CLERK_JWT_KEY, authorizedParties: origins });
 export function createHandler(verifySession: Verify = verify) {
   return async function handle(request: Request, env: Env): Promise<Response> {
+    const path = new URL(request.url).pathname;
+    if (path === "/api/submissions/ingest" && request.method === "POST") {
+      let response;
+      try { response = await receiveSubmission(request, env); }
+      catch { response = reply("Submission intake failed. Retry this response later.", 502); }
+      response.headers.set("Cache-Control", "no-store");
+      return response;
+    }
     const origin = request.headers.get("Origin") || "";
     const origins = values(env.ALLOWED_ORIGINS);
     if (!origin || !origins.includes(origin))
@@ -68,8 +77,12 @@ export function createHandler(verifySession: Verify = verify) {
       !values(env.CLERK_ALLOWED_USER_IDS).includes(identity.sub)
     )
       return finish(reply("This account does not have desk access.", 403));
-    const path = new URL(request.url).pathname;
     try {
+      if (path === "/api/submissions" && request.method === "GET")
+        return finish(await listSubmissions(request, env));
+      const submission = path.match(/^\/api\/submissions\/([a-f0-9]{64})$/);
+      if (submission && request.method === "PUT")
+        return finish(await reviewSubmission(request, env, submission[1], identity.sub));
       if (path === "/api/episode-tags" && ["GET", "POST"].includes(request.method))
         return finish(await episodeTags(request, env));
       const episode = path.match(/^\/api\/episodes\/([1-9]\d*)$/);

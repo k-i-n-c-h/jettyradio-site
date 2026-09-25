@@ -69,7 +69,7 @@ Cloudflare authentication setup: https://developers.cloudflare.com/workers/ci-cd
 - AzuraCast changes are not transactional. If assignment succeeds but enabling fails, inspect the disabled playlist before retrying. The desk never promises rollback of an uncertain broadcast response.
 - The Worker serializes desk scheduling and archiving requests with the same station lock; people editing directly in AzuraCast are outside that lock.
 - Opening or changing a week checks the same public Google Calendar feed used by the schedule page and adds missing draft episodes with Pacific air dates, times, show names, and artists. No Google login is required. Recurrences, exclusions, moved occurrences, and cancellations are applied when creating episodes; existing drafts, submissions, and archived records are retained. Calendar changes never overwrite a saved time or delete an episode; mismatches and overlapping or overnight slots require manual review. Stable calendar identities prevent duplicates, including after editing an episode, and concurrent saves are merged with revision checks. The plan remains capped at 500 episodes.
-- Google form/email ingestion is not wired into this Worker. Existing submission notifications remain separate. Calendar drafts begin Awaiting audio; submission links and reviews still need to be entered in the desk.
+- Google form intake is available through the authenticated submission webhook and the staff-only `/backstage/submissions` review page. Follow [submission setup](../scripts/submissions/README.md) to enable it. Calendar drafts still begin Awaiting audio; reviewing an incoming submission does not populate or schedule a desk episode.
 
 ## Reconciling episodes managed in AzuraCast
 
