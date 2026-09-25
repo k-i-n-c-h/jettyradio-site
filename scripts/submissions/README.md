@@ -30,4 +30,8 @@ Google documents [spreadsheet form-submit events](https://developers.google.com/
 
 ## Local verification
 
+Run `npm run submissions:sync` from the site root to copy all production submissions into the local database. This requires your existing Wrangler Cloudflare login. The command applies missing local migrations, reads only the production submissions table, and imports missing records while preserving existing local reviews. Private temporary SQL files are removed when it finishes. It never writes to production.
+
+To exercise the form-to-review flow locally: submit the real Google Form, wait for its Apps Script execution to complete, run `npm run submissions:sync`, and refresh `http://localhost:4321/backstage/submissions`. Mark a submission reviewed and refresh to check persistence. Repeat the sync for new form responses. Google delivers to the production intake; localhost receives a snapshot when you run the command. No DNS configuration is needed for this workflow. Moving submission details into a desk episode is still manual; the review page does not schedule a broadcast.
+
 Use `npx wrangler d1 migrations apply jettyradio-desk --local` in `desk-worker`, set a local-only `SUBMISSIONS_WEBHOOK_SECRET` in the ignored root `.env`, then run the existing local development command. Use synthetic submissions only when manually exercising local intake. Run the Worker type check/build, browser type check, and site build before release. The Apps Script production trigger must be verified after installation; local compilation cannot verify Google's trigger delivery.

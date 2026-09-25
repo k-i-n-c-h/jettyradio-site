@@ -19,6 +19,7 @@
   "scripts": {
     "setup": "node scripts/local.mjs setup",
     "dev": "node scripts/local.mjs dev",
+    "submissions:sync": "node scripts/submissions/sync-local.mjs",
     "dev:site": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
