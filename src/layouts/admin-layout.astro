@@ -1,22 +1,13 @@
 ---
 import RootLayout from './root-layout.astro'
 import { Show, SignInButton } from '@clerk/astro/components'
-import BackstageNavigation from '../components/backstage-navigation.astro'
-import logo from '../assets/jettyradio2.png'
-
-interface Props { showNavigation?: boolean }
-const { showNavigation = true } = Astro.props
-const isBackstageHome = Astro.url.pathname.replace(/\/$/, '') === '/backstage'
+import Header from '../components/header.astro'
 ---
 
 <RootLayout title="Jetty Admin">
+    <Header backstage />
     <div class="backstage-shell">
         <Show when="signed-in">
-            {showNavigation && <header class="backstage-masthead">
-                <a href="/backstage"><img src={logo.src} alt="Jetty Radio" width="220" /></a>
-                <p>Santa Cruz-based internet radio <span aria-hidden="true">𒀭</span> backstage</p>
-            </header>}
-            {showNavigation && !isBackstageHome && <div class="px-4"><BackstageNavigation wide /></div>}
             <div class="backstage-content"><slot /></div>
         </Show>
         <Show when="signed-out">
@@ -35,13 +26,6 @@ const isBackstageHome = Astro.url.pathname.replace(/\/$/, '') === '/backstage'
         </Show>
     </div>
 </RootLayout>
-
-<style>
-    .backstage-masthead{display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px 16px 0;text-align:center;font-family:var(--backstage-font)}
-    .backstage-masthead img{display:block;width:min(220px,70vw);height:auto}
-    .backstage-masthead p{font-size:1rem}
-    .backstage-masthead span{padding:0 5px;color:#c8e6a0}
-</style>
 
 <style is:global>
     .backstage-shell{--backstage-font:"Courier New",Courier,monospace;font-family:var(--backstage-font)}
