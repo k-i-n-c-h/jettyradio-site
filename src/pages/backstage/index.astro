@@ -6,14 +6,7 @@ import AdminLayout from '../../layouts/admin-layout.astro'
     <main class="backstage-home">
         <p class="eyebrow">𒀭 behind the broadcast 𒀭</p>
         <h1>Jetty Backstage</h1>
-        <p>Choose a door into the station.</p>
-        <nav aria-label="Backstage pages">
-            <a href="/backstage/desk">Scheduling Desk <span>Review &amp; schedule shows ↗</span></a>
-            <a href="/backstage/djs">DJs &amp; shows <span>Browse the roster ↗</span></a>
-            <a href="/backstage/episodes">Episodes <span>Explore the audio library ↗</span></a>
-            <a href="/backstage/upload-show">Upload show <span>Send a show to the station ↗</span></a>
-        </nav>
-        <p class="footer"><a href="/">← Back to Jetty Radio</a> 𒀭 <a href="/schedule">Show schedule</a></p>
+        <p>Use the navigation above to manage episodes, DJs, and scheduling.</p>
     </main>
 </AdminLayout>
 
@@ -21,11 +14,4 @@ import AdminLayout from '../../layouts/admin-layout.astro'
     .backstage-home{max-width:560px;margin:32px auto 80px;padding:0 16px;text-align:center;font-family:var(--backstage-font)}
     .eyebrow{color:#c8e6a0;letter-spacing:.1em}
     h1{font-size:2.5rem;line-height:1.2;margin:12px 0}
-    nav{margin:32px 0;border-block:1px solid #aaa;background:#0e0e0edb;text-align:left}
-    nav a{display:block;padding:16px 20px;border-bottom:1px dotted #777;font-size:1.25rem;text-decoration:underline;text-underline-offset:3px}
-    nav a:last-child{border-bottom:0}
-    nav a::before{content:'𒀭';color:#c8e6a0;margin-right:12px;display:inline-block}
-    nav a:hover,nav a:focus-visible{background:#c8e6a018;color:#c8e6a0}
-    nav span{display:block;margin:4px 0 0 28px;color:#ccc;font:0.85rem var(--backstage-font);text-decoration:none}
-    .footer a{text-decoration:underline;text-underline-offset:3px}
 </style>

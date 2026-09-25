@@ -1,5 +1,9 @@
 ---
 import logo from "../assets/jettyradio2.png";
+import { Show, UserButton } from '@clerk/astro/components';
+
+interface Props { backstage?: boolean }
+const { backstage = false } = Astro.props;
 ---
 
 <style>
@@ -23,6 +27,12 @@ import logo from "../assets/jettyradio2.png";
         font-size: 16px;
     }
 
+    .account {
+        display: flex;
+        justify-content: center;
+        margin-top: 8px;
+    }
+
     .logo img {
         max-width: 312px;
         height: auto;
@@ -39,7 +49,7 @@ import logo from "../assets/jettyradio2.png";
     <a href="/" class="logo"><img src={logo.src} alt="Jetty Radio" /></a>
     <p class="subtitle">Santa Cruz-based internet radio</p>
 </header>
-<nav>
+<nav aria-label="Jetty navigation">
     <a class="link" href="/">Listen Live</a> 𒀭
     <a class="link" href="/schedule">Schedule</a> 𒀭
     <a class="link" href="/archive">Archives</a> 𒀭
@@ -49,4 +59,11 @@ import logo from "../assets/jettyradio2.png";
     <a class="link" href="https://instagram.com/jettyradio" target="_blank"
         >Instagram</a
     >
+    {backstage && <>
+        <br />
+        <a class="link" href="/backstage/episodes">Episodes</a> 𒀭
+        <a class="link" href="/backstage/djs">DJs</a> 𒀭
+        <a class="link" href="/backstage/desk">Scheduling Desk</a>
+        <Show when="signed-in"><div class="account"><UserButton /></div></Show>
+    </>}
 </nav>
