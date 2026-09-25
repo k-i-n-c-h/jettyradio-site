@@ -1,0 +1,26 @@
+---
+import AdminLayout from '../../layouts/admin-layout.astro'
+---
+<AdminLayout>
+    <main id="submissions" data-api={import.meta.env.PUBLIC_DESK_API_URL || ''}>
+        <p class="eyebrow">𒀭 JETTY BACKSTAGE 𒀭</p>
+        <h1>Recently submitted</h1>
+        <p>Review incoming episodes, audio, and artwork before adding them to the scheduling desk.</p>
+        <div class="submission-tools">
+            <label>Find a submission <input class="input" id="submission-search" type="search" placeholder="Show name, tracklist, or notes" disabled /></label>
+            <label>Review status <select class="select" id="submission-filter" disabled><option value="all">All submissions</option><option value="new">Needs review</option><option value="reviewed">Reviewed</option></select></label>
+            <button class="btn btn-outline" id="submission-refresh" disabled>Refresh</button>
+        </div>
+        <p id="submission-status" role="status" aria-live="polite">Sign in to load submissions.</p>
+        <section id="submission-list" aria-label="Submitted episodes"></section>
+        <button class="btn btn-outline" id="submission-more" hidden>Load older submissions</button>
+        <p class="source-note">Review status is saved in Backstage. It does not schedule a broadcast or update the response sheet.</p>
+        <noscript>Enable JavaScript to load private submissions.</noscript>
+    </main>
+</AdminLayout>
+<script>
+    import '../../lib/backstage/submissions-client'
+</script>
+<style is:global>
+#submissions{max-width:1100px;margin:32px auto 80px;padding:0 24px;color:#f2f2f2;line-height:1.6}#submissions h1{font-size:2.5rem;line-height:1.2;margin:8px 0 16px}#submissions .eyebrow{color:#c8e6a0;letter-spacing:.12em;font-size:.875rem}#submissions .submission-tools{display:flex;flex-wrap:wrap;gap:16px;align-items:end;margin:28px 0 20px}#submissions label{display:flex;flex:1;flex-direction:column;gap:8px;min-width:200px}#submissions input,#submissions select{width:100%;color:#181818;background:#f7f5ef;color-scheme:light}#submissions #submission-status{margin:20px 0;color:#ccc}#submissions details{border:1px solid #ffffff36;background:#161616eb;margin:12px 0}#submissions summary{padding:20px;cursor:pointer;overflow-wrap:anywhere}#submissions summary span{display:block;color:#c8e6a0;font-size:.875rem}#submissions .submission-body{padding:20px;border-top:1px solid #ffffff36}#submissions dl{display:grid;grid-template-columns:180px minmax(0,1fr);gap:16px;margin-bottom:24px}#submissions dt{color:#bbb}#submissions dd{white-space:pre-wrap;overflow-wrap:anywhere}#submissions a{color:#c8e6a0;text-decoration:underline;text-underline-offset:3px}#submissions .source-note{color:#bbb;font-size:.875rem;margin-top:24px}#submissions .btn-outline{border-color:#aaa89f}#submissions [hidden]{display:none!important}@media(max-width:600px){#submissions{padding:0 16px}#submissions h1{font-size:2rem}#submissions dl{grid-template-columns:1fr;gap:6px}#submissions dd{margin-bottom:16px}}
+</style>
